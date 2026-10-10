@@ -1,15 +1,13 @@
-# RPS
+# Trinity: afterlight
 
-RPS is a game project that will be developed with the help of Codex.
+A free React and Three.js cyberpunk combat game inspired by rock, paper, and scissors. Endless procedural encounters, six districts, apex abilities, frame upgrades, and mobile controls.
 
-## Status
+The application lives in [rps-repository](rps-repository/README.md).
 
-Initial repository setup.
+```bash
+cd rps-repository
+npm ci
+npm run dev
+```
 
-## Development
-
-The project structure, gameplay systems, assets, controls, and build setup will be added as development begins.
-
-## Goal
-
-Build a polished, fun, expandable game with clean code, modular systems, and room for future features.
+Requires Node.js 24.5 or newer. See the application README for gameplay, production hosting, offline installation, testing, and optional free OpenRouter transmissions.

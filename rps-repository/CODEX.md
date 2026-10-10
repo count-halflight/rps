@@ -1,6 +1,6 @@
-# RPS — Codex Project Instructions
+# Trinity: afterlight | Project instructions
 
-You are developing a game called **RPS**.
+You are developing **Trinity: afterlight**, an endless cyberpunk combat game built around rock, paper, and scissors.
 
 The repository should remain clean, modular, runnable, and easy to expand.
 
@@ -23,8 +23,10 @@ The project currently uses:
 
 - HTML
 - CSS
-- JavaScript
+- React and JavaScript
+- Three.js
 - Vite
+- Node.js 24.5+ for the optional encounter service
 
 You may introduce libraries or a game engine if there is a strong technical reason, but do not add dependencies simply for convenience.
 
@@ -147,8 +149,9 @@ Always check:
 Run:
 
 ```bash
-npm install
+npm ci
 npm run build
+npm test
 ```
 
 The task should not be considered complete while the build is failing.

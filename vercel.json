@@ -1,0 +1,7 @@
+{
+  "installCommand": "cd rps-repository && npm ci",
+  "buildCommand": "cd rps-repository && npm run build:static",
+  "outputDirectory": "rps-repository/dist",
+  "framework": null,
+  "rewrites": [{ "source": "/((?!assets/|models/|icons/|licenses/|sw.js|manifest.webmanifest|favicon.svg).*)", "destination": "/index.html" }]
+}
