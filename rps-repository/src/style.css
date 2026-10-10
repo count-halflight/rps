@@ -1,0 +1,168 @@
+:root {
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: #f5f5f7;
+  background: #0b0b0d;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at top,
+      #1b1b22 0,
+      #0b0b0d 45%
+    );
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.game-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.game-card {
+  width: min(720px, 100%);
+  padding: 48px;
+  text-align: center;
+  border: 1px solid #2a2a31;
+  border-radius: 24px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.035),
+      rgba(255, 255, 255, 0.01)
+    ),
+    #141418;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+}
+
+.eyebrow {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #9b9ba5;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(64px, 12vw, 116px);
+  line-height: 0.9;
+  letter-spacing: -0.07em;
+}
+
+.version {
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: #686872;
+}
+
+.status {
+  max-width: 520px;
+  margin: 28px auto;
+  font-size: 17px;
+  line-height: 1.65;
+  color: #c4c4cc;
+}
+
+.game-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 28px 0;
+}
+
+.meta-item {
+  padding: 16px;
+  border: 1px solid #2a2a31;
+  border-radius: 14px;
+  background: #101013;
+}
+
+.meta-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #73737d;
+}
+
+.meta-item strong {
+  font-size: 16px;
+}
+
+button {
+  min-width: 160px;
+  padding: 13px 22px;
+  border-radius: 12px;
+  background: #f5f5f7;
+  color: #111116;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.hint {
+  margin: 18px 0 0;
+  font-size: 12px;
+  color: #65656d;
+}
+
+@media (max-width: 600px) {
+  .game-card {
+    padding: 32px 20px;
+  }
+
+  .game-meta {
+    grid-template-columns: 1fr;
+  }
+}
