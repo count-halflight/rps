@@ -77,7 +77,7 @@ test("weapon choreography produces distinct trajectories and poses, including no
   assert.equal(paths.size, 9);
 });
 
-test("five weapon kits have 45 distinct normal paths and 15 distinct finishers", () => {
+test("five weapon kits have 45 distinct normal paths and 30 distinct finishers", () => {
   const paths = new Set(),
     finals = new Set();
   for (const f of FIGHTERS)
@@ -95,9 +95,9 @@ test("five weapon kits have 45 distinct normal paths and 15 distinct finishers",
             ),
           ),
         );
-        if (variant === 0) {
+        if (variant === 0) for (const finisherIndex of [0, 1]) {
           const fin = {
-            ...attackPresentation(weapon, true, false, 0, f.id),
+            ...attackPresentation(weapon, true, false, 0, f.id, null, finisherIndex),
             playerWeapon: weapon,
             outcome: "win",
             finalHit: true,
@@ -112,5 +112,5 @@ test("five weapon kits have 45 distinct normal paths and 15 distinct finishers",
         }
       }
   assert.equal(paths.size, 45);
-  assert.equal(finals.size, 15);
+  assert.equal(finals.size, 30);
 });

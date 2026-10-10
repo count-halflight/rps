@@ -1,3 +1,7 @@
+@layer legacy;
+@import "./arcade.css";
+
+@layer legacy {
 :root {
   font-family: "Barlow Condensed", sans-serif;
   color: #efe9d9;
@@ -2616,4 +2620,5 @@ a {
  .fighter-details h2{font-size:52px;margin:4px 0}.fighter-details h3{font-size:22px;margin:7px 0}
  .fighter-details p{font-size:16px}.fighter-details dl{margin:12px 0}.selection-moves{margin:12px 0}
  .fighter-roster{bottom:14px}.fighter-choice{padding:10px 12px}
+}
 }

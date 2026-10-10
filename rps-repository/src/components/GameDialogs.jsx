@@ -99,6 +99,11 @@ export default function GameDialogs({
               Win a fight to choose a perk, upgrade or supply, then pick your route. Every
               fifth floor has a boss. The prism vault reverses the cycle.
             </li>
+            <li>
+              Hit timed prompts to gain 3 charge each and strengthen your attack’s
+              follow-up. Tap the target, or press 1, 2 or 3. You can turn prompts
+              off in Settings. Reduced motion skips them.
+            </li>
           </ol>
           <button
             className="primary-button"

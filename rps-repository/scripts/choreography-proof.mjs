@@ -12,7 +12,7 @@ export function sequenceDistance(a,b){
  return {pose:Math.sqrt(pose/(samples-1)),camera:Math.sqrt(camera/(samples-1)),combined:Math.sqrt((pose+camera*.04)/(samples-1))};
 }
 export function inspectCatalog(threshold=.18){
- const sequences=ATTACK_CATALOG.map(s=>({...attackPresentation(s.weapon,s.final,false,s.variant,s.character),playerWeapon:s.weapon,outcome:'win',finalHit:s.final}));
+ const sequences=ATTACK_CATALOG.map(s=>({...attackPresentation(s.weapon,s.final,false,s.variant,s.character,null,s.finisherIndex||0),playerWeapon:s.weapon,outcome:'win',finalHit:s.final}));
  const table=[];const collisions=[];
  for(let i=0;i<sequences.length;i++)for(let j=i+1;j<sequences.length;j++){
   const d=sequenceDistance(sequences[i],sequences[j]);table.push({a:ATTACK_CATALOG[i].id,b:ATTACK_CATALOG[j].id,...d});

@@ -121,6 +121,15 @@ export default function SettingsDialog({
           ))}
         </div>
       </div>
+      <div className="setting-row">
+        <div>
+          <h3>Cinematic prompts</h3>
+          <p>Timed keys or taps add flourishes and earn charge. Off plays the full scene automatically. Reduced motion also skips prompts.</p>
+        </div>
+        <button className={`setting-toggle ${preferences.cinematicQte ? 'on' : ''}`}
+          aria-pressed={preferences.cinematicQte} aria-label="Toggle cinematic prompts"
+          onClick={() => update('cinematicQte', !preferences.cinematicQte)}><span /></button>
+      </div>
       {import.meta.env.VITE_STATIC_HOST !== "true" && (
         <div className="setting-row">
           <div>

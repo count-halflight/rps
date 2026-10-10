@@ -33,7 +33,9 @@ import SettingsDialog from "./components/SettingsDialog";
 import useEncounter from "./game/useEncounter";
 import { CONTROLS } from "./game/controls";
 import { dailyDate } from "./game/daily";
-import { attackPresentation } from "./game/cinematics";
+import { attackPresentation, cinematicCue } from "./game/cinematics";
+import { createQteTrack, expireQtes, pressQte, qteScore, qteCharge } from './game/qte.js';
+import CinematicQte from './components/CinematicQte.jsx';
 import {
   startTraining,
   progressTraining,
@@ -97,6 +99,8 @@ export default function App() {
   const [storageWarning, setStorageWarning] = useState(false),
     [toast, setToast] = useState("");
   const timer = useRef(null),
+    qteTimers = useRef([]),
+    qteState = useRef(null),
     toastTimer = useRef(null),
     busyRef = useRef(false),
     action = useRef(null);
@@ -172,7 +176,7 @@ export default function App() {
   ]);
   useEffect(()=>{
     if(!import.meta.env.DEV||!new URLSearchParams(location.search).has('proof'))return;
-    const load=e=>{clearTimeout(timer.current);clearTimeout(introTimer.current);setRun(e.detail);setEntrance(null);setStarted(true);setSelection(null);setModal(null);setTraining(null);setBusy(false);busyRef.current=false;setPending(null);setAnimation(null);};
+    const load=e=>{clearTimeout(timer.current);clearTimeout(introTimer.current);qteTimers.current.forEach(clearTimeout);qteState.current=null;setRun(e.detail);setEntrance(null);setStarted(true);setSelection(null);setModal(null);setTraining(null);setBusy(false);busyRef.current=false;setPending(null);setAnimation(null);};
     window.addEventListener('trinity:proof-run',load);
     return()=>window.removeEventListener('trinity:proof-run',load);
   },[]);
@@ -227,6 +231,7 @@ export default function App() {
       clearTimeout(timer.current);
       clearTimeout(toastTimer.current);
       clearTimeout(introTimer.current);
+      qteTimers.current.forEach(clearTimeout);
     },
     [],
   );
@@ -239,6 +244,12 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(""), 2800);
   };
   const commit = (next) => {
+    qteTimers.current.forEach(clearTimeout);
+    if (qteState.current) {
+      const charge = qteCharge(expireQtes(qteState.current.track, Infinity));
+      if (charge && next.hp > 0) next = { ...next, charge: Math.min(100, next.charge + charge) };
+      qteState.current = null;
+    }
     if(!training&&next.result?.phaseChange){
       const phase=next.result.phaseChange.to;
       setEntrance({kind:'phase',phase,id:`phase-${next.level}-${next.turn}`,duration:1800});
@@ -297,7 +308,20 @@ export default function App() {
       variant,
       attacker,
       loss&&next.result.signature?`${run.enemy.rival.id}.signature`:null,
+      (Math.floor((run.level - 1) / 3) + run.turn) % 2,
     );
+    const startedAt = performance.now();
+    const qte = createQteTrack(cinematicCue(cinematic.sequenceId), cinematic.duration,
+      preferences.cinematicQte && !cinematic.reduced && !loss && !training);
+    const animationId = `${run.seed}-${run.level}-${next.turn}`;
+    qteState.current = { id: animationId, startedAt, track: qte };
+    qteTimers.current.forEach(clearTimeout);
+    qteTimers.current = qte.map(cue => setTimeout(() => {
+      const current = qteState.current;
+      if (!current || current.id !== animationId) return;
+      current.track = expireQtes(current.track, Math.max(cue.closesAt, performance.now() - current.startedAt));
+      setAnimation(value => value?.id === animationId ? { ...value, qte: current.track, qteSuccess: qteScore(current.track) } : value);
+    }, Math.max(0, cue.closesAt - (performance.now() - startedAt))));
     setAnimation({
       ...next.result,
       ...cinematic,
@@ -307,17 +331,26 @@ export default function App() {
       potentialDamage: loss
         ? next.result.incoming
         : damageFor(run, "win", attackStance),
-      startedAt:performance.now(),
-      id: `${run.seed}-${run.level}-${next.turn}`,
+      startedAt,
+      qte,
+      qteSuccess: 1,
+      id: animationId,
     });
     playChoreography(cinematic,sound);
     navigator.vibrate?.(20);
-    playTone(
-      cinematic.finisher ? "finisher" : next.result.outcome,
-      sound,
-      (cinematic.duration / 1000) * cinematic.impactAt,
-    );
+    if (!cinematic.finisher) playTone(next.result.outcome, sound,
+      (cinematic.duration / 1000) * cinematic.impactAt);
     timer.current = setTimeout(() => commit(next), cinematic.duration);
+  };
+  const respondQte = key => {
+    const current = qteState.current;
+    if (!current || !busyRef.current || modal) return;
+    const response = pressQte(current.track, key, performance.now() - current.startedAt);
+    current.track = response.track;
+    if (!response.result) return;
+    setAnimation(value => value?.id === current.id ? { ...value, qte: current.track, qteSuccess: qteScore(current.track) } : value);
+    navigator.vibrate?.(response.result.status === 'hit' ? [12,25,18] : 8);
+    playTone(response.result.status === 'hit' ? 'qte-hit' : 'qte-miss', sound);
   };
   const engage = (choice = weapon) => {
     if(busyRef.current&&animation){queuedHand.current=choice;setWeapon(choice);navigator.vibrate?.(12);return;}
@@ -377,8 +410,11 @@ export default function App() {
       if (e.key === CONTROLS.pauseKey) {
         e.preventDefault();
         if (modal) setModal(null);
-        else if (!busyRef.current && run.phase === "ready") setModal("pause");
+        else if (!busyRef.current && !entrance && run.phase === "ready") setModal("pause");
         return;
+      }
+      if (busyRef.current && animation?.qte?.length && ['1','2','3'].includes(e.key)) {
+        e.preventDefault(); respondQte(e.key); return;
       }
       if(busyRef.current&&animation&&['1','2','3'].includes(e.key)){queuedHand.current=WEAPONS[Number(e.key)-1].id;return;}
       if (!started || modal || run.phase !== "ready" || busyRef.current) return;
@@ -398,7 +434,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [modal, run.phase, sound, started, pending, animation]);
+  }, [modal, run.phase, sound, started, pending, animation, entrance]);
   const advance = (id) => {
     setRun((current) => chooseReward(current, id));
     setAnimation(null);
@@ -456,6 +492,7 @@ export default function App() {
   const restart = (seed, challenge = null) => {
     clearTimeout(introTimer.current);setEntrance(null);
     clearTimeout(timer.current);
+    qteTimers.current.forEach(clearTimeout); qteState.current = null;
     busyRef.current = false;
     setBusy(false);
     selectedRun.current = { seed, challenge };
@@ -539,6 +576,7 @@ export default function App() {
               </button>
             </div>
           </header>
+          {busy && animation && <CinematicQte animation={animation} onPress={respondQte} />}
           {training && (
             <TrainingCoach
               training={training}
@@ -561,7 +599,7 @@ export default function App() {
             sound={sound}
             engage={engage}
             notify={notify}
-            onGuide={() => setModal("guide")}
+            onGuide={() => {if (!busyRef.current && !pending && !entrance) setModal("guide");}}
           />
           {storageWarning && (
             <span className="save-warning">

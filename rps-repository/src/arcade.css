@@ -1,0 +1,741 @@
+/* Interface plates are composed around the arena, with one shared arcade trim. */
+:root {
+  color: #f1f3ef;
+  background: #071014;
+  --mint: #91f9eb;
+  --muted: #a8bbc1;
+  --line: #50646e;
+  --arcade-gold: #ffd389;
+  --arcade-cyan: #8de9ee;
+  --arcade-ink: #080f17;
+}
+button {
+  transition: filter 130ms ease, background 130ms ease, border-color 130ms ease;
+}
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 3px solid #fbd789;
+  outline-offset: 4px;
+}
+.film-shade {
+  background: linear-gradient(#030913c9, transparent 23%, transparent 76%, #071019bd),
+    radial-gradient(ellipse at 50% 48%, transparent 45%, #01060c4a);
+}
+
+/* A familiar fighting-game read: two strong health plates and the floor badge. */
+.fight-hud {
+  top: 55px;
+  left: 4.5%;
+  right: 4.5%;
+  gap: 21px;
+  grid-template-columns: minmax(0, 1fr) 90px minmax(0, 1fr);
+  filter: drop-shadow(0 3px 4px #0008);
+}
+.health-side { min-width: 0; }
+.fighter-name { gap: 10px; margin-bottom: 6px; }
+.fighter-name b {
+  min-width: 0;
+  color: #f1f7f5;
+  font: 700 27px/1.1 "Chakra Petch", sans-serif;
+  letter-spacing: -.7px;
+}
+.fighter-name span { color: #bed0d7; font-size: 15px; }
+.life-bar {
+  height: 24px;
+  padding: 0;
+  border: 3px solid #23313d;
+  border-top-color: #8196a0;
+  border-bottom-color: #050a12;
+  background: #0c1522;
+  box-shadow: 0 0 0 1px #a0b5b055, inset 0 2px 4px #000b;
+  transform: skew(-15deg);
+}
+.life-bar i {
+  inset: 0 auto 0 0;
+  background: linear-gradient(#d0fff2, #89e0d3 38%, #40a4ad 40%, #63c7c7 88%);
+  box-shadow: 0 0 14px #7de6db70;
+  transition: width 180ms cubic-bezier(.16, 1, .3, 1);
+}
+.life-bar:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: repeating-linear-gradient(90deg, transparent 0 9.8%, #08222b38 9.8% 10%);
+  pointer-events: none;
+}
+.life-bar .ghost-hp {
+  background: #ffdb92;
+  opacity: .85;
+  transition: width 420ms ease;
+  box-shadow: none;
+}
+.rival .life-bar { transform: skew(15deg); }
+.rival .life-bar i {
+  background: linear-gradient(#ffdbb3, #f48768 38%, #b3423b 40%, #e96453 88%);
+  box-shadow: 0 0 14px #e87b5870;
+  inset: 0 0 0 auto;
+}
+.rival .life-bar .ghost-hp { background: #ffd794; box-shadow: none; }
+.health-side small {
+  display: inline-block;
+  font: 600 12px/1 "Chakra Petch", sans-serif;
+  color: #c7d7da;
+  padding-top: 6px;
+  letter-spacing: .1px;
+}
+.phase-marker { background: #291220; width: 3px; z-index: 4; }
+.boss-life { height: 24px; border-top-color: #dfbd8e; }
+.elite-life { border-top-color: #c7b1ff; }
+.round-mark {
+  position: relative;
+  margin-top: -7px;
+  min-height: 79px;
+  justify-content: center;
+  background: linear-gradient(155deg, #30424fbf, #091521ec 74%);
+  clip-path: polygon(13% 0, 87% 0, 100% 15%, 91% 81%, 50% 100%, 9% 81%, 0 15%);
+  border-top: 2px solid #d8c799;
+}
+.round-mark span { font-size: 13px; line-height: 1; color: #ffe0a6; }
+.round-mark b { font: 400 42px/1.13 "Anton", sans-serif; color: #fff1d7; }
+.game-tools { left: 4.5%; right: 4.5%; top: 8px; }
+.game-tools button { color: #c8d7db; font-size: 14px; min-height: 33px; }
+.game-tools button svg { width: 17px; height: 17px; }
+.game-tools .menu-button { font-size: 22px !important; }
+.game-tools .menu-button span { font-size: 14px; }
+.stage-location {
+  bottom: 20px;
+  left: 4.5%;
+  border-left: 3px solid #8ee8e7;
+  padding: 3px 0 3px 12px;
+  text-shadow: 0 2px 6px #000;
+}
+.stage-location span { font-size: 12px; color: #afcbd2; letter-spacing: .4px; }
+.stage-location b { font: 600 20px/1.25 "Chakra Petch", sans-serif; color: #e4f4f2; }
+.stage-location small { font-size: 13px; color: #becdd1; }
+.streak { color: #ffdd9a; top: 30%; right: 5.5%; }
+.streak b { font-size: 72px; text-shadow: 3px 3px #142031, 0 0 25px #ffd68433; }
+.streak span { font-size: 20px; }
+.perk-loadout { left: 4.5%; top: 140px; max-width: 265px; gap: 5px; }
+.perk-loadout span { background: #091522b0; border-left-color: #8ed0d0; font-size: 12px; color: #c8d8d8; }
+
+/* The control dock is a single machine, with large tactile input plates. */
+.combat-console {
+  isolation: isolate;
+  background: linear-gradient(transparent, #040b12df 10%, #08121cec 85%);
+  border-top: 0;
+  min-height: 150px;
+  padding: 15px max(5%, calc((100vw - 1040px) / 2)) 10px;
+}
+.combat-console:before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 5px max(2%, calc((100vw - 1010px) / 2)) 0;
+  pointer-events: none;
+  background: linear-gradient(#233746cc, #0b1721f2 9%, #09121ff2);
+  border-top: 1px solid #829b9d80;
+  clip-path: polygon(2.5% 0, 97.5% 0, 100% 16%, 100% 100%, 0 100%, 0 16%);
+}
+.combat-read, .combat-foot, .earned-actions { max-width: 860px; }
+.loadout-row { max-width: 735px; }
+.combat-read { font-size: 16px; color: #e8ece5; margin-bottom: 9px; }
+.enemy-tell { font-size: 15px; gap: 6px; }
+.enemy-tell b { color: #ffd8a0; }
+.enemy-tell > span, .enemy-tell small { color: #9fb4bd; font-size: 13px; }
+.weapon-loadout { gap: 12px; }
+.weapon-card {
+  min-height: 67px;
+  padding: 9px 15px;
+  gap: 14px;
+  border: 1px solid #8ca9b175;
+  border-top: 2px solid #a6c4c999;
+  border-bottom: 4px solid #030810;
+  background: linear-gradient(135deg, #243746 0%, #121f2c 55%, #0c1622);
+  box-shadow: inset 0 1px #d4eff622, 0 4px 8px #0005;
+  transform: skew(-8deg);
+}
+.weapon-card > svg, .weapon-card > div { transform: skew(8deg); }
+.weapon-card > svg { color: #9ebcc6; filter: drop-shadow(0 1px #000); }
+.weapon-card b { color: #e4ecea; font: 700 22px/1.1 "Chakra Petch", sans-serif; letter-spacing: -.5px; }
+.weapon-card small { color: #9eb5be; font-size: 12px; margin-top: 4px; }
+.weapon-key { color: #93aebd; font: 500 10px/1 "Chakra Petch", sans-serif; top: 5px; left: 8px; }
+.weapon-card.selected {
+  border-color: #b3eadc;
+  border-bottom-color: #568f8b;
+  background: linear-gradient(135deg, #2c5b62, #193342 80%);
+  box-shadow: inset 0 1px #effffb60, 0 0 20px #8de9d81a;
+}
+.weapon-card.selected > svg { color: #c3fff0; }
+.weapon-card.selected b { color: #eefff8; }
+.weapon-card:hover:not(:disabled) { border-color: #cadbdd; background: linear-gradient(135deg, #365364, #1d3344); }
+.combat-foot { font-size: 13px; margin-top: 10px; color: #9bb4bf; }
+.resource-strip { gap: 20px; }
+.resource-strip > span { display: inline-flex; gap: 2px; align-items: baseline; }
+.resource-strip > span:before {
+  content: "";
+  display: inline-block;
+  height: 5px;
+  width: 5px;
+  background: #7399ad;
+  margin-right: 5px;
+  align-self: center;
+  transform: rotate(45deg);
+}
+.resource-strip .charge-text:before { background: #84e3e1; }
+.resource-strip .hot:before { background: #fb9170; }
+.resource-strip b { font-family: "Chakra Petch", sans-serif; font-size: 12px; }
+.charge-text b { color: #9cf9e9; }
+.mobile-tactics-toggle { font-size: 14px; color: #b2c9d0; padding: 1px 0; }
+.action-ready .combat-read > span { color: #b6f7d9; }
+.attack-loadout, .item-loadout { gap: 10px; }
+.attack-card {
+  height: 101px;
+  padding: 8px 13px;
+  border: 1px solid #8099a875;
+  border-top: 2px solid #b2cbd8a0;
+  border-bottom: 3px solid #07101b;
+  background: linear-gradient(140deg, #253a4b, #101d2b 62%);
+  box-shadow: inset 0 1px #d9e7ff24, 0 4px 8px #0004;
+  position: relative;
+  overflow: hidden;
+}
+.attack-card:before {
+  content: "";
+  position: absolute;
+  top: -30px;
+  left: -22px;
+  width: 90px;
+  height: 170px;
+  background: #9bdfff06;
+  transform: rotate(25deg);
+  pointer-events: none;
+}
+.attack-card > svg { color: #b2e7ed; }
+.attack-card b { font: 700 19px/1.08 "Barlow Condensed", sans-serif; color: #eff8f4; }
+.attack-card span { color: #b6cdd5; font-size: 13px; }
+.attack-card > small:not(.attack-kind) { color: #ddad90; font-size: 11px; }
+.attack-card:hover:not(:disabled) { border-color: #badfe2; background: linear-gradient(140deg, #385562, #192e3f); }
+.attack-1 > svg { color: #aee5c2; }
+.attack-2 {
+  border-top-color: #ffc596;
+  border-left-color: #c97d5e;
+  border-right-color: #c97d5e;
+  background: linear-gradient(140deg, #553329, #261f2b 70%);
+  box-shadow: inset 0 1px #ffe4cb24, 0 4px 8px #0004;
+}
+.attack-2 > svg { color: #ffd09b; }
+.bag-button {
+  width: 65px;
+  color: #c4d7da;
+  background: linear-gradient(#223540, #0c1722);
+  border: 1px solid #607d8c;
+  border-bottom: 3px solid #06101a;
+  font-size: 14px;
+}
+.item-card { min-height: 101px; background: linear-gradient(135deg, #213c41, #101f2a); border-color: #77979c; }
+.item-card svg { color: #a6f2d6; }
+.item-card b { font: 700 21px "Barlow Condensed", sans-serif; }
+.item-card span { color: #bacdd1; }
+.tactics-drawer {
+  background: #0b1929f7;
+  border: 1px solid #7898a580;
+  border-top: 2px solid #afd8d5;
+  padding: 18px;
+}
+.stance-control button, .utility-row button { background: #1b2c3b; border-color: #71879665; }
+.stance-control button.active { border-color: #9be2d5; background: #224542; }
+.stance-control small, .utility-row small { color: #b7cbd0; }
+.signature-warning { background: #612b25f0; border-left-color: #ffc477; color: #ffe3b9; margin-bottom: 8px; font-size: 15px; }
+.cycle-warning {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 12px;
+  max-width: 860px;
+  margin: -1px auto 9px;
+  padding: 5px 10px;
+  border-left: 2px solid #ffd28c;
+  background: #72502e36;
+  color: #dfc59d;
+  font-size: 13px;
+  line-height: 1.2;
+}
+.cycle-warning b { color: #ffe2ab; font-weight: 700; }
+
+/* Title and fighter select use full-bleed artwork, large identities, and roster plates. */
+.title-screen { background: #06101b; justify-content: flex-start; }
+.title-art { opacity: 1; }
+.title-art:after { background: linear-gradient(0deg, #02080fb0, transparent 48%); }
+.title-screen:after { background: linear-gradient(90deg, #051019f2, #071020ae 36%, transparent 72%); }
+.title-content {
+  max-width: 700px;
+  width: 60%;
+  padding: 35px 0;
+  margin-left: 8.5%;
+  text-align: left;
+  text-shadow: 0 2px 10px #0009;
+}
+.title-credit { font: 500 15px "Chakra Petch", sans-serif; color: #bad8dc; margin-bottom: 20px; letter-spacing: .2px; }
+.title-content h1 {
+  font: 400 clamp(90px, 10.3vw, 155px)/.97 "Anton", sans-serif;
+  letter-spacing: -1.5px;
+  color: #f4f5e9;
+  transform: none;
+  text-shadow: 4px 5px 0 #102336, 0 0 35px #99c7db22;
+}
+.title-content h1 span {
+  font: 700 .35em/1.08 "Chakra Petch", sans-serif;
+  letter-spacing: .8px;
+  color: #91f1df;
+  margin: 5px 0 0 5px;
+  text-shadow: 0 2px 0 #163d45;
+}
+.title-tagline { font-size: 21px; color: #cee3e1; margin-top: 25px; }
+.start-button {
+  margin: 30px 0 0;
+  min-height: 62px;
+  width: 286px;
+  justify-content: space-between;
+  padding: 13px 24px;
+  background: linear-gradient(115deg, #ffe4a5, #e9b961 75%);
+  color: #101924;
+  box-shadow: inset 0 2px #fff2c6, 0 5px #4d3523, 0 9px 24px #0007;
+  border-right: 4px solid #bb8347;
+  font: 700 25px "Chakra Petch", sans-serif;
+  transform: skew(-5deg);
+}
+.start-button svg { stroke-width: 2.3; }
+.new-game-title { margin: 19px 0 0; padding: 0; font-size: 17px; color: #ddd1b7; }
+.training-start { margin: 19px 0 0; font-size: 19px; justify-content: flex-start; gap: 10px; }
+.training-start span { color: #89a8b7; font-size: 13px; }
+.new-game-title + .training-start { margin-top: 13px; }
+.title-options { justify-content: flex-start; gap: 24px; margin-top: 27px; }
+.title-options button { color: #b7cdd3; font-size: 15px; }
+.title-best { color: #819eab; font-size: 13px; margin-top: 18px; }
+.character-select { background: #07101a; }
+.character-select > header { padding: 24px 4.5%; background: linear-gradient(#040b14d9, transparent); }
+.character-select h1 { font: 700 28px "Chakra Petch", sans-serif; letter-spacing: -.5px; }
+.character-select header button { color: #ccdee1; min-height: 40px; }
+.character-select header > span { color: #95b7c4; font-size: 15px; }
+.selection-preview { inset: 0 26% 125px 0; }
+.selection-preview:after {
+  background: linear-gradient(90deg, transparent 42%, #07101aeb 98%), linear-gradient(0deg, #07101a, transparent 20%);
+}
+.selection-wordmark {
+  position: absolute;
+  z-index: 1;
+  top: 16%;
+  left: 4.5%;
+  color: transparent;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--fighter-color) 38%, transparent);
+  font: 400 clamp(115px, 19vw, 280px)/1 "Anton", sans-serif;
+  letter-spacing: -5px;
+  pointer-events: none;
+  opacity: .6;
+  mix-blend-mode: screen;
+}
+.selection-stage-trim { position: absolute; bottom: 10%; left: 7%; width: 64%; height: 26px; pointer-events: none; }
+.selection-stage-trim i { position: absolute; left: 0; right: 0; top: 0; border-top: 1px solid var(--fighter-color); opacity: .3; transform: skew(-32deg); }
+.selection-stage-trim i:nth-child(2) { top: 7px; width: 85%; opacity: .16; }
+.selection-stage-trim i:nth-child(3) { top: 14px; width: 65%; opacity: .1; }
+.fighter-details { right: 5%; top: 21%; width: 30%; z-index: 2; }
+.selection-class { display: flex; align-items: center; gap: 13px; margin-bottom: 8px; color: var(--fighter-color); }
+.selection-class > span:not(.selection-number) { font: 600 13px "Chakra Petch", sans-serif; }
+.selection-class > svg { margin-left: auto; }
+.selection-number { font: 600 15px "Chakra Petch", sans-serif; padding: 4px 7px; border: 1px solid var(--fighter-color); }
+.fighter-details h2 { font: 400 clamp(63px, 7.6vw, 112px)/1 "Anton", sans-serif; margin: 8px 0; color: #f0f5ed; letter-spacing: -1px; }
+.fighter-details h3 { font: 600 24px "Chakra Petch", sans-serif; color: var(--fighter-color); margin: 12px 0; letter-spacing: -.4px; }
+.fighter-details p { color: #b2cbd2; font-size: 19px; max-width: 350px; }
+.fighter-details dl { gap: 28px; margin: 23px 0; }
+.fighter-details dl > div { width: 118px; }
+.fighter-details dt { font-size: 13px; color: #9bb4c1; }
+.fighter-details dd { font: 600 29px/1.5 "Chakra Petch", sans-serif; color: #ecf3e7; }
+.fighter-details dl i { display: block; height: 4px; background: linear-gradient(90deg, var(--fighter-color) var(--stat-fill), #65809140 var(--stat-fill)); }
+.selection-moves { border: 0; padding: 0; margin: 24px 0; }
+.selection-moves div { align-items: center; gap: 9px; margin: 9px 0; }
+.selection-moves svg { color: var(--fighter-color); opacity: .7; }
+.selection-moves span { font-size: 14px; color: #90aebd; width: 49px; }
+.selection-moves b { font-size: 17px; color: #d4e4e7; }
+.fighter-details .fighter-confirm {
+  min-width: 220px;
+  background: var(--fighter-color);
+  color: #101b26;
+  font: 700 18px "Chakra Petch", sans-serif;
+  justify-content: space-between;
+  border-bottom: 3px solid #243c4699;
+  box-shadow: 0 4px 14px #0004;
+  min-height: 53px;
+}
+.fighter-roster { left: 4.5%; right: 4.5%; bottom: 26px; gap: 12px; }
+.fighter-choice {
+  position: relative;
+  padding: 13px 14px 13px 62px;
+  min-height: 80px;
+  border: 1px solid #53708188;
+  border-top: 2px solid #81919f77;
+  border-bottom: 4px solid #040a13;
+  background: linear-gradient(120deg, #1e3040, #0c1926);
+  overflow: hidden;
+}
+.fighter-choice:after { content: ""; position: absolute; right: -30px; top: -10px; width: 55px; height: 110px; transform: rotate(25deg); background: var(--fighter-color); opacity: .055; pointer-events: none; }
+.fighter-choice > svg { position: absolute; left: 13px; top: 19px; color: var(--fighter-color); opacity: .7; }
+.fighter-choice b { font: 700 22px/1.2 "Chakra Petch", sans-serif; letter-spacing: -.5px; }
+.fighter-choice span { font-size: 13px; color: #9fb9c5; margin-top: 4px; }
+.fighter-choice small { color: var(--fighter-color); font: 500 10px "Chakra Petch", sans-serif; }
+.fighter-choice.chosen {
+  border-color: var(--fighter-color);
+  border-bottom-color: var(--fighter-color);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--fighter-color) 14%, #172431), #132533);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--fighter-color) 12%, transparent), inset 0 1px #ffffff26;
+}
+.fighter-choice.chosen > svg { opacity: 1; }
+
+/* Overlays sit inside the game's fiction without turning the arena into a dashboard. */
+.modal-shade { background: #010611cc; backdrop-filter: blur(6px); }
+.modal {
+  background: linear-gradient(135deg, #152938, #0a1827 68%);
+  border: 1px solid #708d9c;
+  border-top: 3px solid #b6cccd;
+  box-shadow: 0 20px 80px #000a, inset 0 1px #efffff12;
+  transform: none;
+  padding: 28px 30px;
+}
+.modal-head { border-bottom: 1px solid #6c88933c; padding-bottom: 17px; margin-bottom: 20px; }
+.modal-head h2 { color: #f0f5e7; font: 700 33px/1.15 "Chakra Petch", sans-serif; letter-spacing: -.8px; }
+.eyebrow { color: #95c8d4; font-size: 13px; }
+.modal-intro { color: #bacdd2; }
+.icon-button { border: 1px solid #6c839380; color: #b6ced7; }
+.primary-button { background: #ffd899; color: #111c2a; border-bottom: 3px solid #9e7948; font: 700 17px "Chakra Petch", sans-serif; }
+.secondary-button { background: #1a2c3b; color: #c8dfe4; border: 1px solid #7192a0; }
+.menu-options { gap: 0; }
+.menu-options button {
+  background: none;
+  border-left: 0;
+  border-bottom: 1px solid #68849636;
+  padding: 11px 5px;
+  font: 600 21px "Chakra Petch", sans-serif;
+  min-height: 48px;
+}
+.menu-options button:first-child { background: #9deadd; border: 0; color: #10242b; padding-left: 15px; margin-bottom: 8px; }
+.menu-options button span { font: 500 12px "Chakra Petch", sans-serif; color: #809fae; margin-top: 7px; }
+.menu-options button:hover:not(:disabled) { color: #b8fff0; background: #1d384950; }
+.menu-options button:first-child:hover { color: #08101a; background: #b9f4e8; }
+.menu-record { color: #8caab8; font-size: 14px; }
+.upgrade-grid { gap: 14px; }
+.upgrade-grid button { border: 1px solid #678695; border-bottom: 3px solid #050e18; background: linear-gradient(155deg, #244251, #101f31); padding: 23px 17px; min-height: 218px; }
+.upgrade-grid button:hover { background: linear-gradient(155deg, #355963, #152a3e); border-color: #b3dcda; }
+.upgrade-icon { color: #9ff3de; }
+.upgrade-grid h3 { color: #f4dcaf; font: 600 21px "Chakra Petch", sans-serif; }
+.upgrade-grid p { color: #a9c0c9; font-size: 17px; }
+.install-label { color: #a6f1dc; }
+.victory-summary { color: #addcca; }
+.next-floor-label { color: #97b4c2; font-size: 15px; }
+.cycle-guide > div { background: #101f2f; border-bottom: 2px solid #78a6ad; }
+.cycle-guide h3 { font: 600 21px "Chakra Petch", sans-serif; }
+.cycle-guide p, .rule-list { color: #b5cbd2; }
+.archive-records b { font-family: "Chakra Petch", sans-serif; font-weight: 700; color: #ffdc9f; }
+.archive-records span { color: #9cbcc8; }
+.daily-circuit { border-color: #5b7e8d; background: #122332; }
+.daily-circuit p, .daily-circuit small { color: #aac6d0; }
+.frame-finishes button, .augment-list > div { background: #102131; border-color: #5e829152; }
+.frame-finishes small, .augment-list small { color: #9fbac9; }
+.setting-row { border-top-color: #67859544; }
+.setting-row p { color: #9cb7c5; }
+.setting-options button { background: #112332; border-color: #789aa478; }
+.setting-toggle { background: #102131; border-color: #7fa1ad; }
+.setting-toggle.on { background: #99ddce; }
+.toast { background: #d7ffed; color: #16282c; border-left: 4px solid #7bd4c4; font-size: 16px; }
+.rps-reveal { background: linear-gradient(120deg, #0a182be8, #111c2ce8); border: 1px solid #a0bacd9c; border-top: 3px solid #d8d69e; padding: 22px 30px; gap: 20px; box-shadow: 0 15px 70px #000c; }
+.hand-reveal > div { background: #183846ed; border: 1px solid #95cecf; width: 84px; height: 95px; color: #cdffed; }
+.hand-reveal > div:last-child { background: #4a292bed; border-color: #d89b82; color: #ffd8b5; }
+.hand-reveal > b { font: 700 28px "Chakra Petch", sans-serif; color: #d7e4e5; }
+.rps-reveal p { color: #f2dfb7; font: 600 22px "Chakra Petch", sans-serif; }
+.cinematic-bar { background: #02060b; }
+.cinematic-caption { bottom: 7.5%; width: min(92%, 800px); }
+.cinematic-caption > span { color: #b3d6db; font-size: 14px; }
+.cinematic-caption strong { font: 400 clamp(28px, 3.1vw, 48px)/1.15 "Anton", sans-serif; letter-spacing: .1px; color: #f6f3e9; margin-top: 3px; }
+.is-finisher .cinematic-caption strong { font-size: clamp(32px, 4.7vw, 66px); }
+.cinematic-caption small { font: 600 17px "Chakra Petch", sans-serif; margin-top: 4px; }
+.damage-feedback > span { color: #ffdf9f; font-size: 77px; text-shadow: 3px 4px #291b2a, 0 0 20px #ffa24b40; }
+.damage-feedback .damage-player { color: #ff9c83; }
+.damage-feedback small { color: #eae9d0; font-size: 16px; }
+
+.encounter-intro {
+  background: linear-gradient(90deg, #07111cca, #07111c5c 48%, transparent 78%);
+  color: #f4f4e9;
+  overflow: hidden;
+}
+.intro-bars:before, .intro-bars:after { height: 6%; background: #010509; }
+.intro-slash { position: absolute; top: -30%; bottom: -30%; left: 42%; width: 32px; background: linear-gradient(transparent 10%, #9bcad322 35%, #b4ede638 65%, transparent); transform: rotate(21deg); pointer-events: none; }
+.intro-slash:after { content: ""; position: absolute; left: 42px; top: 0; bottom: 0; width: 3px; background: linear-gradient(transparent, #a6ddd265, transparent); }
+.intro-floor { position: absolute; left: 4%; top: 7%; font: 400 clamp(130px, 18vw, 255px) "Anton", sans-serif; color: transparent; -webkit-text-stroke: 1px #9bdae14a; opacity: .6; pointer-events: none; }
+.intro-identity { bottom: 17%; left: 6%; max-width: 59%; }
+.intro-identity > span { padding: 5px 12px; font: 600 14px "Chakra Petch", sans-serif; color: #acfff0; background: #1c514ee0; border-left: 3px solid #aaffdf; }
+.intro-identity h1 { margin: 14px 0 7px; font: 400 clamp(48px, 7vw, 98px)/1.04 "Anton", sans-serif; letter-spacing: -.5px; text-shadow: 4px 5px #07141e; }
+.intro-identity h2 { font: 600 24px "Chakra Petch", sans-serif; color: #ffe1b1; }
+.intro-identity p { font-size: 22px; color: #bed1d5; margin: 17px 0 12px; }
+.intro-identity small { color: #8eafb8; font-size: 15px; }
+.encounter-intro > button { display: flex; align-items: center; gap: 12px; background: #12283bea; border-color: #6d9aa4; color: #d8ebe8; font: 600 16px "Chakra Petch", sans-serif; min-height: 46px; padding: 10px 19px; bottom: 9%; }
+.boss-intro { background: linear-gradient(90deg, #240d21de, #1a14264a 58%, transparent); }
+.boss-intro .intro-identity > span { color: #ffe0b4; background: #5a2725e0; border-left-color: #ffc486; }
+.boss-intro .intro-slash { background: linear-gradient(transparent 10%, #efa68d22 35%, #ea986f38 65%, transparent); }
+.phase-intro .intro-identity h1 { font-size: clamp(40px, 5.8vw, 80px); }
+.flow-screen { background: radial-gradient(ellipse at 50% 10%, #274653f2, #030a13fb 80%); }
+.flow-heading h1 { font-family: "Chakra Petch", sans-serif; font-weight: 700; letter-spacing: -1px; }
+.flow-heading > span { color: #9fbfcb; }
+.flow-heading p { color: #acc5d0; }
+.route-door { border-color: #7096a3; background: linear-gradient(160deg, #284755, #0d1928 68%); border-bottom: 5px solid #0009; }
+.route-door h2 { font-family: "Chakra Petch", sans-serif; font-weight: 600; font-size: 27px; }
+.route-door > small { font: 600 12px "Chakra Petch", sans-serif; color: #9ac9d2; }
+.route-door p { color: #b2c9d0; }
+.door-enter { color: #d4f9e7; }
+.room-actions button { background: linear-gradient(125deg, #203c4a, #112134); border-color: #6e94a4; }
+.room-actions span { color: #a9c4ce; }
+.room-leave { background: #a5eadb; color: #102331; font: 600 18px "Chakra Petch", sans-serif; border-bottom: 3px solid #548c80; }
+
+@media (min-width: 601px) and (max-height: 760px) {
+  .fighter-details { top: 100px; bottom: 127px; width: 32%; overflow-y: auto; padding: 0 10px 4px 0; }
+  .fighter-details h2 { font-size: 68px; margin: 5px 0; }
+  .fighter-details h3 { font-size: 20px; margin: 7px 0; }
+  .fighter-details p { font-size: 17px; }
+  .fighter-details dl { margin: 13px 0; }
+  .selection-moves { margin: 14px 0; }
+  .fighter-roster { bottom: 18px; }
+  .selection-class { margin-bottom: 4px; }
+}
+@media (max-width: 900px) and (min-width: 601px) {
+  .fighter-roster { gap: 7px; }
+  .fighter-choice { padding: 12px 8px 12px 42px; }
+  .fighter-choice > svg { left: 7px; width: 27px; }
+  .fighter-choice b { font-size: 18px; }
+  .fighter-choice span { font-size: 11px; }
+  .fighter-choice small { display: none; }
+  .fighter-details h3 { font-size: 20px; }
+  .fighter-details .fighter-confirm { min-width: 0; width: 100%; font-size: 15px; padding: 10px 13px; }
+  .selection-class > span:not(.selection-number) { font-size: 11px; }
+  .selection-class > svg { width: 26px; }
+}
+@media (max-width: 600px) {
+  .fight-hud { top: 52px; left: 4%; right: 4%; grid-template-columns: minmax(0, 1fr) 50px minmax(0, 1fr); gap: 9px; }
+  .fighter-name { gap: 5px; margin-bottom: 5px; align-items: flex-end; }
+  .fighter-name b { font-size: 19px; letter-spacing: -.6px; }
+  .fighter-name span { font-size: 11px; }
+  .rival .fighter-name span { display: none; }
+  .life-bar, .boss-life { height: 17px; border-width: 2px; }
+  .health-side small { font-size: 10px; padding-top: 5px; }
+  .round-mark { min-height: 58px; margin-top: -4px; }
+  .round-mark span { font-size: 10px; }
+  .round-mark b { font-size: 31px; }
+  .game-tools { left: 4%; right: 4%; top: 8px; }
+  .game-tools button { font-size: 12px; }
+  .game-tools .menu-button span { font-size: 12px; }
+  .hud-tools-right { gap: 7px; }
+  .game-tools .fullscreen-button span { display: none; }
+  .stage-location { left: 4%; bottom: 15px; padding-left: 9px; }
+  .stage-location span { font-size: 10px; }
+  .stage-location b { font-size: 16px; }
+  .stage-location small { font-size: 11px; }
+  .perk-loadout { left: 4%; top: 113px; max-width: 185px; }
+  .perk-loadout span { font-size: 10px; padding: 2px 5px; }
+  .streak b { font-size: 57px; }
+  .streak span { font-size: 16px; }
+  .combat-console { min-height: 137px; padding: 14px 5% max(9px, env(safe-area-inset-bottom)); }
+  .combat-console:before { inset: 5px 2% 0; }
+  .combat-read { font-size: 12px; gap: 4px; margin-bottom: 8px; }
+  .combat-read > span { max-width: 61%; }
+  .enemy-tell { font-size: 12px; gap: 3px; }
+  .enemy-tell > span { display: none; }
+  .enemy-tell small { font-size: 10px; }
+  .enemy-tell svg { width: 15px; }
+  .weapon-loadout { gap: 7px; }
+  .weapon-card { min-height: 62px; padding: 7px 5px; gap: 5px; }
+  .weapon-card > svg { width: 27px; height: 32px; }
+  .weapon-card b { font-size: 16px; letter-spacing: -.5px; }
+  .weapon-card small { font-size: 9px; }
+  .weapon-key { top: 4px; left: 5px; font-size: 8px; }
+  .combat-foot { font-size: 11px; gap: 8px; margin-top: 9px; }
+  .resource-strip { gap: 11px; }
+  .resource-strip b { font-size: 10px; }
+  .resource-strip > span:before { width: 4px; height: 4px; margin-right: 3px; }
+  .mobile-tactics-toggle { font-size: 12px; }
+  .attack-loadout, .item-loadout { gap: 5px; }
+  .attack-card { height: 106px; padding: 7px 5px; }
+  .attack-card > svg { width: 23px; height: 23px; }
+  .attack-card b { font-size: 16px; }
+  .attack-card span { font-size: 10px; line-height: 1.13; }
+  .attack-card > small:not(.attack-kind) { font-size: 9px; }
+  .item-card { min-height: 106px; padding: 7px; }
+  .item-card b { font-size: 16px; }
+  .item-card span { font-size: 10px; }
+  .bag-button { width: 40px; font-size: 10px; }
+  .bag-button svg { width: 19px; }
+  .signature-warning { font-size: 12px; padding: 5px 9px; }
+  .cycle-warning { flex-direction: column; align-items: center; gap: 2px; padding: 4px 6px; font-size: 11px; margin-bottom: 7px; }
+  .title-content { width: 88%; max-width: 500px; margin-left: 7%; padding: 28px 0; }
+  .title-content h1 { font-size: clamp(78px, 24vw, 135px); }
+  .title-content h1 span { font-size: .36em; margin-left: 3px; }
+  .title-credit { font-size: 12px; margin-bottom: 20px; }
+  .title-tagline { font-size: 18px; margin-top: 22px; }
+  .start-button { width: 240px; min-height: 56px; font-size: 23px; margin-top: 28px; }
+  .training-start { font-size: 17px; margin-top: 23px; }
+  .training-start span { font-size: 12px; }
+  .title-options { gap: 18px; margin-top: 26px; }
+  .title-options button, .title-options .fullscreen-button { font-size: 13px; }
+  .title-screen:after { background: linear-gradient(90deg, #040e18cf, #07102060 72%, transparent), linear-gradient(0deg, #040b15c2, transparent 70%); }
+  .character-select > header { padding: 12px 5%; }
+  .character-select h1 { font-size: 19px; letter-spacing: -.5px; }
+  .character-select header button { font-size: 14px; gap: 5px; }
+  .character-select header > span { display: none; }
+  .selection-preview { inset: 52px 0 38% 0; }
+  .selection-preview:after { background: linear-gradient(0deg, #07101a, transparent 37%); }
+  .selection-wordmark { top: 13%; font-size: 29vw; left: 7%; letter-spacing: -2px; opacity: .4; }
+  .selection-stage-trim { bottom: 5%; left: 14%; width: 72%; }
+  .fighter-details { left: 6%; right: 6%; width: auto; top: auto; bottom: 114px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px 10px; }
+  .selection-class, .selection-moves { display: none; }
+  .fighter-details h2 { font-size: 47px; margin: 0; }
+  .fighter-details h3 { font-size: 16px; margin: 0; align-self: center; }
+  .fighter-details p { font-size: 15px; margin: 8px 0; grid-column: 1/-1; max-width: none; }
+  .fighter-details dl { gap: 19px; margin: 4px 0; }
+  .fighter-details dl > div { width: auto; min-width: 55px; }
+  .fighter-details dt { font-size: 10px; }
+  .fighter-details dd { font-size: 21px; line-height: 1.4; }
+  .fighter-details dl i { height: 3px; }
+  .fighter-details .fighter-confirm { width: 100%; min-width: 0; min-height: 49px; padding: 9px; font-size: 13px; gap: 5px; align-self: center; }
+  .fighter-confirm svg { width: 18px; }
+  .fighter-roster { left: 3%; right: 3%; bottom: 16px; gap: 5px; }
+  .fighter-choice { padding: 35px 2px 8px; min-height: 80px; text-align: center; }
+  .fighter-choice > svg { top: 6px; width: 23px; height: 25px; left: calc(50% - 11.5px); }
+  .fighter-choice b { font-size: 14px; letter-spacing: -.5px; }
+  .fighter-choice span { font-size: 9px; line-height: 1.2; margin-top: 4px; }
+  .fighter-choice small { display: none; }
+  .modal { padding: 22px 18px; max-height: 88dvh; }
+  .modal-shade { padding: 20px; }
+  .modal-head h2 { font-size: 27px; }
+  .menu-options button { font-size: 19px; }
+  .upgrade-grid { gap: 7px; }
+  .upgrade-grid button { padding: 16px 10px; min-height: 208px; }
+  .upgrade-grid h3 { font-size: 17px; }
+  .upgrade-grid p { font-size: 14px; }
+  .install-label { font-size: 13px; gap: 3px; }
+  .next-floor-label { font-size: 13px; }
+  .rps-reveal { gap: 14px; padding: 18px 19px; }
+  .hand-reveal > div { width: 75px; height: 90px; }
+  .rps-reveal p { font-size: 18px; }
+  .cinematic-caption > span { font-size: 12px; }
+  .cinematic-caption strong { font-size: 30px; }
+  .is-finisher .cinematic-caption strong { font-size: 38px; }
+  .cinematic-caption small { font-size: 14px; }
+  .damage-feedback > span { font-size: 62px; }
+  .intro-floor { top: 8%; font-size: 150px; }
+  .intro-slash { left: 63%; width: 22px; }
+  .intro-identity { left: 6%; bottom: 20%; max-width: 87%; }
+  .intro-identity > span { font-size: 11px; padding: 4px 8px; }
+  .intro-identity h1 { font-size: clamp(39px, 12vw, 62px); margin-top: 11px; }
+  .intro-identity h2 { font-size: 19px; }
+  .intro-identity p { font-size: 18px; margin: 13px 0 9px; max-width: 85%; }
+  .intro-identity small { font-size: 12px; }
+  .encounter-intro > button { font-size: 13px; bottom: 8%; padding: 9px 15px; }
+  .phase-intro .intro-identity h1 { font-size: 40px; }
+  .flow-heading h1 { font-size: 27px; }
+  .route-door h2 { font-size: 19px; }
+  .route-door > small { font-size: 10px; }
+}
+@media (max-width: 350px) {
+  .fighter-name span { font-size: 10px; }
+  .fighter-name b { font-size: 17px; }
+  .weapon-card > svg { width: 22px; }
+  .weapon-card b { font-size: 14px; }
+  .weapon-card small { font-size: 8px; }
+  .weapon-key { font-size: 7px; }
+  .resource-strip { gap: 8px; }
+  .title-options { gap: 13px; }
+  .fighter-details h3 { font-size: 14px; }
+  .fighter-details .fighter-confirm { font-size: 12px; }
+}
+@media (max-height: 500px) and (min-width: 601px) {
+  .fight-hud { top: 37px; left: 4%; right: 4%; grid-template-columns: minmax(0, 1fr) 60px minmax(0, 1fr); gap: 15px; }
+  .fighter-name b { font-size: 21px; }
+  .fighter-name span { font-size: 12px; }
+  .life-bar, .boss-life { height: 17px; border-width: 2px; }
+  .health-side small { font-size: 10px; padding-top: 4px; }
+  .round-mark { min-height: 56px; }
+  .round-mark span { font-size: 10px; }
+  .round-mark b { font-size: 30px; }
+  .game-tools { top: 3px; left: 4%; right: 4%; }
+  .game-tools button { min-height: 28px; font-size: 12px; }
+  .game-tools .menu-button span { font-size: 12px; }
+  .perk-loadout { top: 104px; }
+  .perk-loadout span { font-size: 10px; }
+  .stage-location { bottom: 12px; }
+  .stage-location b { font-size: 15px; }
+  .stage-location span, .stage-location small { font-size: 10px; }
+  .combat-console { min-height: 111px; padding: 10px 12% 7px; }
+  .combat-read { font-size: 12px; margin-bottom: 5px; }
+  .enemy-tell, .enemy-tell > span, .enemy-tell small { font-size: 11px; }
+  .combat-console:before { inset: 3px 8% 0; }
+  .weapon-card { min-height: 44px; padding: 5px 10px; }
+  .weapon-card > svg { width: 29px; height: 29px; }
+  .weapon-card b { font-size: 17px; }
+  .weapon-card small { font-size: 10px; margin-top: 2px; }
+  .weapon-key { font-size: 8px; }
+  .combat-foot { font-size: 11px; margin-top: 5px; }
+  .resource-strip b { font-size: 10px; }
+  .mobile-tactics-toggle { font-size: 12px; }
+  .cycle-warning { font-size: 11px; padding: 3px 7px; margin-bottom: 5px; }
+  .attack-card { height: 63px; padding: 5px 9px; display: grid; grid-template-columns: 24px 1fr; gap: 2px 7px; text-align: left; }
+  .attack-card > svg { grid-row: 1/4; width: 24px; height: 24px; }
+  .attack-card b { font-size: 17px; margin: 0; }
+  .attack-card span { font-size: 10px; }
+  .attack-card > small:not(.attack-kind) { font-size: 9px; }
+  .item-card { min-height: 63px; padding: 7px 9px; }
+  .item-card b { font-size: 18px; }
+  .item-card span { font-size: 11px; }
+  .bag-button { width: 48px; font-size: 11px; }
+  .character-select > header { padding: 8px 4%; }
+  .character-select h1 { font-size: 22px; }
+  .selection-preview { inset: 0 37% 86px 0; }
+  .selection-wordmark { top: 15%; left: 3%; font-size: 18vw; }
+  .fighter-details { top: 62px; bottom: 94px; right: 4%; width: 35%; overflow-y: auto; padding-right: 7px; }
+  .fighter-details h2 { font-size: 44px; margin: 0; }
+  .fighter-details h3 { font-size: 16px; margin: 5px 0; }
+  .fighter-details p { font-size: 13px; margin: 5px 0; }
+  .fighter-details dl { gap: 16px; margin: 8px 0; }
+  .fighter-details dl > div { width: 85px; }
+  .fighter-details dt { font-size: 10px; }
+  .fighter-details dd { font-size: 20px; line-height: 1.3; }
+  .selection-class, .selection-moves { display: none; }
+  .fighter-details .fighter-confirm { min-height: 38px; width: 100%; min-width: 0; font-size: 14px; padding: 8px 12px; }
+  .fighter-roster { left: 4%; right: 4%; bottom: 10px; gap: 7px; }
+  .fighter-choice { min-height: 61px; padding: 8px 8px 8px 39px; }
+  .fighter-choice > svg { width: 26px; left: 6px; top: 14px; height: 29px; }
+  .fighter-choice b { font-size: 17px; }
+  .fighter-choice span { font-size: 10px; }
+  .fighter-choice small { display: none; }
+  .title-content { padding: 12px 0; margin-left: 7%; width: 80%; }
+  .title-credit { font-size: 11px; margin-bottom: 7px; }
+  .title-content h1 { font-size: 68px; line-height: .93; }
+  .title-content h1 span { font-size: .34em; margin-top: 4px; }
+  .title-tagline { font-size: 15px; margin-top: 10px; }
+  .start-button { min-height: 41px; width: 221px; font-size: 18px; padding: 6px 17px; margin-top: 15px; }
+  .new-game-title { margin-top: 11px; font-size: 13px; }
+  .training-start { font-size: 14px; min-height: 28px; margin-top: 10px; }
+  .training-start span { font-size: 11px; }
+  .new-game-title + .training-start { margin-top: 6px; }
+  .title-options { margin-top: 8px; gap: 20px; }
+  .title-options button { font-size: 12px; min-height: 29px; }
+  .title-best { margin-top: 5px; font-size: 11px; }
+  .intro-identity { bottom: 17%; }
+  .intro-identity h1 { font-size: 47px; margin-top: 9px; }
+  .intro-identity h2 { font-size: 18px; }
+  .intro-identity p { font-size: 16px; margin: 10px 0 7px; }
+  .intro-identity > span, .intro-identity small { font-size: 11px; }
+  .encounter-intro > button { font-size: 13px; min-height: 38px; padding: 8px 13px; }
+  .intro-floor { font-size: 130px; }
+  .cinematic-caption strong { font-size: 27px; }
+  .is-finisher .cinematic-caption strong { font-size: 35px; }
+  .cinematic-caption > span { font-size: 11px; }
+  .cinematic-caption small { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  button, .life-bar i, .life-bar .ghost-hp { transition: none; }
+}

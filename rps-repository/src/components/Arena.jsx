@@ -9,6 +9,7 @@ import { cinematicFrame } from "../game/cinematics";
 import { FIGHTERS, fighterFor, rivalFighter } from "../game/fighters";
 import { createFilmRenderer, createClothMaps } from "./filmRenderer";
 import { createCombatEffects } from "./combatEffects";
+import { createCinematicWorld } from './cinematicWorld.js';
 const smoothArrow = (progress, hit, i, count) =>
   Math.max(
     0,
@@ -43,6 +44,8 @@ export default function Arena(props) {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#11171b");
     scene.fog = new THREE.FogExp2("#152024", 0.045);
+    const arenaFog = scene.fog;
+    const arenaBackground = scene.background;
     scene.add(new THREE.HemisphereLight("#a9cddd", "#312331", 1.25));
     const key = new THREE.DirectionalLight("#ffe3cb", 2.4);
     key.position.set(-2, 6, 5);
@@ -63,6 +66,7 @@ export default function Arena(props) {
       film = createFilmRenderer(renderer, scene, camera),
       clothMaps = createClothMaps();
     const combatEffects = createCombatEffects(scene);
+    const cinematicWorld = createCinematicWorld(scene);
     const pendingFighter=f=>({root:new THREE.Group(),pose(){},setWeapon(){},glow:new THREE.MeshStandardMaterial({color:f.color,emissive:f.color})});
     const players = FIGHTERS.map(pendingFighter),
       enemies = FIGHTERS.map(pendingFighter);
@@ -203,11 +207,18 @@ export default function Arena(props) {
       visible = true,
       frames = 0,
       frameStart = performance.now(),
+      renderWidth = 0,
+      renderHeight = 0,
+      needsRedraw = true,
+      lastQualityLow = false,
       disposed = false;
     const resize = () => {
-      renderer.setSize(el.clientWidth, el.clientHeight);
-      film.resize(el.clientWidth,el.clientHeight);
-      camera.aspect = el.clientWidth / el.clientHeight;
+      const width=Math.max(1,el.clientWidth),height=Math.max(1,el.clientHeight);
+      if(width===renderWidth&&height===renderHeight)return;
+      renderWidth=width;renderHeight=height;needsRedraw=true;
+      renderer.setSize(width,height);
+      film.resize(width,height);
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
     };
     const observer = new ResizeObserver(resize);
@@ -226,8 +237,13 @@ export default function Arena(props) {
       el.dataset.visible=String(visible);
       if (!visible || state.paused) {
         lastTime = now;
+        // A fullscreen or layout resize clears the drawing buffer. Restore
+        // the frozen scene once, keeping the paused actors and clock still.
+        if(visible&&needsRedraw){film.render(lastQualityLow,time,0,false);needsRedraw=false;}
         return;
       }
+      scene.fog=arenaFog;
+      scene.background=arenaBackground;
       const reduced =
         state.reducedMotion ||
         matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -277,7 +293,8 @@ export default function Arena(props) {
       }
       const a = state.animation,
         elapsed = (now - started) / 1000;
-      const frame = a ? cinematicFrame({...a,actorScale:a.outcome==='loss'?enemy.root.scale.y:1.35,targetScale:a.outcome==='loss'?1.35:enemy.root.scale.y}, elapsed) : null,
+      const enemyScale=1.42*(state.enemyAppearance?.scale || 1);
+      const frame = a ? cinematicFrame({...a,actorScale:a.outcome==='loss'?enemyScale:1.35,targetScale:a.outcome==='loss'?1.35:enemyScale}, elapsed) : null,
         active = frame && frame.progress < 1;
       el.dataset.cinematic = active
         ? `${frame.weapon}-${a.finisher ? "final" : a.variant}`
@@ -295,7 +312,7 @@ export default function Arena(props) {
       player.root.rotation.set(0, 0.95, 0);
       enemy.root.rotation.set(0, -0.95, 0);
       player.root.scale.setScalar(1.35);
-      enemy.root.scale.setScalar(1.42*(state.enemyAppearance?.scale || 1));
+      enemy.root.scale.setScalar(enemyScale);
       player.pose({}, time);
       const personality=state.enemyAppearance?.personality;
       const idle=personality==='aggressor'?{torsoPitch:.16,handL:[.24,1.6,.36],handR:[-.24,1.58,.35]}:
@@ -314,7 +331,18 @@ export default function Arena(props) {
       }
       if (state.previewSingle) {
         player.root.position.set(0, 0, 0);
-        player.root.rotation.y = state.titleHero ? -.25+Math.sin(time*.18)*.3 : time*.13;
+        player.root.rotation.y = reduced ? -.25 : state.titleHero ? -.25+Math.sin(time*.18)*.3 : time*.13;
+        // Portraits show the face and garment silhouette, with the weapon held
+        // off the centreline instead of directly in front of the eyes.
+        const style=fighterFor(state.character).style;
+        const portrait={
+          blades:{handL:[.40,1.08,.20],handR:[-.36,1.10,.22],weaponPitch:-.18},
+          brawler:{handL:[.30,1.35,.25],handR:[-.30,1.34,.25]},
+          mage:{handL:[.47,1.04,.18],handR:[-.24,1.20,.18],weaponPitch:.03},
+          archer:{handL:[.46,1.20,.17],handR:[-.25,1.22,.14],weaponPitch:-.10,draw:.1},
+          glaive:{handL:[.44,1.12,.18],handR:[-.30,1.26,.16],weaponPitch:-.06},
+        }[style];
+        player.pose({...portrait,headPitch:-.01,headYaw:.03},time);
       }
       if (!active && state.phase === "upgrade") {
         enemy.pose({roll:-1.35},time);
@@ -325,7 +353,7 @@ export default function Arena(props) {
         player.root.position.y = -.92;
       }
       effects.visible = Boolean(
-        active && frame.revealed && a.outcome !== "draw",
+        active && frame.revealed && a.outcome !== "draw" && !frame.spectacle,
       );
       wave.visible = false;
       orb.visible = false;
@@ -344,7 +372,11 @@ export default function Arena(props) {
         attacker.root.position.set(sign * (-2.1 + pose.x), pose.y, pose.z);
         attacker.root.rotation.y = sign * Math.PI/2 + pose.yaw * sign;
         defender.root.position.set(sign * (2.1 + frame.defender.x),frame.defender.y,frame.defender.z||0);
+        defender.root.rotation.y = -sign * Math.PI/2 + (frame.defender.yaw||0)*sign;
+        if (frame.defender.stretch) defender.root.scale.multiply(new THREE.Vector3(...frame.defender.stretch));
         defender.pose({...frame.defender,roll:frame.defender.roll*sign},time);
+        frame.contactPosition = defender.root.position.toArray();
+        frame.contactPosition[1] += 1.48 * (loss ? 1.35 : enemyScale);
         const color = a.color;
         bright.color.set(color);
         effects.position.x = sign * 2.1;
@@ -425,7 +457,7 @@ export default function Arena(props) {
           beam.material.color.set(a.color);
         }
       } else combatEffects.reset();
-      footShadows.forEach((s,i)=>{const f=i?enemy:player;s.visible=f.root.visible;s.position.x=f.root.position.x;s.position.z=f.root.position.z;s.scale.set(1.1,1,.55);});
+      footShadows.forEach((s,i)=>{const f=i?enemy:player;s.visible=f.root.visible && f.root.position.y < .65 && frame?.spectacle?.world!=='space' && frame?.spectacle?.world!=='void';s.position.x=f.root.position.x;s.position.z=f.root.position.z;s.scale.set(1.1,1,.55);});
       const idleHeight=Math.max(1.7,enemy.root.scale.y*1.05),idleDepth=Math.max(10.4,enemy.root.scale.y*5.1);
       let pos = state.previewSingle
           ? state.titleHero?[1.8,2.65,6.3]:[0, 2.7, 7]
@@ -458,7 +490,7 @@ export default function Arena(props) {
       }
       burst.material.uniforms.uTime.value = time;
       burst.material.uniforms.uStrength.value =
-        active && frame.revealed
+        active && frame.revealed && !frame.spectacle
           ? (a.finisher
               ? frame.impact * 0.65
               : frame.impact * 0.35) *
@@ -471,6 +503,8 @@ export default function Arena(props) {
         scene.fog.color.lerp(tint, frame.impact * 0.45);
         key.intensity = 2.4 + frame.impact * 4;
       } else key.intensity = 2.4;
+      scene.fog=arenaFog;
+      scene.background=arenaBackground;
       environment.update(
         time,
         state.enemyLevel,
@@ -481,10 +515,21 @@ export default function Arena(props) {
         state.enemyAppearance?.lookSeed||0,
         state.bossPhase||0,
       );
+      const loss=a?.outcome==='loss';
+      const world=cinematicWorld.update({frame:active?frame:null,animation:a,time,low,reduced,attacker:loss?enemy:player,defender:loss?player:enemy});
+      environment.setVisible?.(!world.hideEnvironment);
+      if (!environment.setVisible) environment.root.visible=!world.hideEnvironment;
+      if(world.hideEnvironment){scene.fog=null;scene.background=new THREE.Color(world.world==='void'?'#02010a':'#02030c');}
+      el.dataset.spectacle=active?frame.spectacle?.kind||'none':'none';
+      el.dataset.cinematicWorld=world.world||'arena';
+      el.dataset.contactIndex=frame?.contactIndex??0;
+      el.dataset.hitCount=frame?.hitCount??0;
       el.dataset.environment=environment.theme;
       el.dataset.worldTime=time.toFixed(2);
       film.render(low,time,active?frame.impact:0,state.district?.static||state.district?.anomaly==='Signal bleed');
-      if(loaded===5&&el.dataset.frameAsset!=='loaded'){
+      el.dataset.backdrop=environment.backdropReady?'loaded':'procedural';
+      lastQualityLow=low;needsRedraw=false;
+      if(loaded===5&&environment.ready!==false&&el.dataset.frameAsset!=='loaded'){
         // Models parsed is not the same as a human frame rendered. Wait for
         // shader preparation before enabling the first hand or starting an intro.
         el.dataset.frameAsset='loaded';props.onReady?.();
@@ -513,10 +558,14 @@ export default function Arena(props) {
       observer.disconnect();
       document.removeEventListener("visibilitychange", visibility);
       combatEffects.dispose();
+      cinematicWorld.dispose();
       const geometries = new Set(),
         materials = new Set(),
+        skeletons = new Set(),
         textures = new Set();
       scene.traverse((o) => {
+        if(o.isSkinnedMesh)skeletons.add(o.skeleton);
+        if(o.isInstancedMesh)o.dispose();
         if (o.geometry) geometries.add(o.geometry);
         if (o.material)
           (Array.isArray(o.material) ? o.material : [o.material]).forEach(
@@ -527,6 +576,7 @@ export default function Arena(props) {
           );
       });
       geometries.forEach((g) => g.dispose());
+      skeletons.forEach(s=>s.dispose());
       materials.forEach((m) => m.dispose());
       textures.forEach((t) => t.dispose());
       clothMaps.dispose();shadowMap.dispose();

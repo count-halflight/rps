@@ -2,7 +2,16 @@ import React, { Suspense, lazy } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { FIGHTERS, fighterFor } from "../game/fighters";
 import { DISTRICTS } from "../game/engine";
+import WeaponMark from "./WeaponMark";
+import WeaponIcon from "./WeaponIcon";
 const Arena = lazy(() => import("./Arena"));
+const FIGHTER_ROLES = {
+  echo: "Close quarters",
+  cinder: "Heavy impact",
+  nyx: "Ranged control",
+  vex: "Precision",
+  kuro: "Long reach",
+};
 export default function CharacterSelect({
   selected,
   setSelected,
@@ -24,6 +33,7 @@ export default function CharacterSelect({
         <h1>Choose your fighter</h1>
         <span>New run</span>
       </header>
+      <div className="selection-wordmark" aria-hidden="true">{f.name}</div>
       <div className="selection-preview">
         <Suspense
           fallback={<div className="scene-loading">Loading fighters…</div>}
@@ -39,11 +49,14 @@ export default function CharacterSelect({
             reducedMotion={preferences.motion === "reduced"}
           />
         </Suspense>
+        <div className="selection-stage-trim" aria-hidden="true"><i /><i /><i /></div>
       </div>
       <div className="fighter-details">
-        <span className="selection-number">
-          0{FIGHTERS.findIndex((c) => c.id === selected) + 1}
-        </span>
+        <div className="selection-class">
+          <span className="selection-number">0{FIGHTERS.findIndex((c) => c.id === selected) + 1}</span>
+          <span>{FIGHTER_ROLES[f.id]}</span>
+          <WeaponMark style={f.style} size={34} />
+        </div>
         <h2>{f.name}</h2>
         <h3>{f.weapon}</h3>
         <p>{f.description}</p>
@@ -51,15 +64,18 @@ export default function CharacterSelect({
           <div>
             <dt>Health</dt>
             <dd>{f.hp}</dd>
+            <i style={{ "--stat-fill": `${f.hp / 120 * 100}%` }} aria-hidden="true" />
           </div>
           <div>
             <dt>Starting charge</dt>
             <dd>{f.charge}</dd>
+            <i style={{ "--stat-fill": `${f.charge / 40 * 100}%` }} aria-hidden="true" />
           </div>
         </dl>
         <div className="selection-moves">
           {Object.entries(f.moves).map(([hand, moves]) => (
             <div key={hand}>
+              <WeaponIcon type={hand} size={22} />
               <span>{hand}</span>
               <b>{moves[0]}</b>
             </div>
@@ -80,6 +96,7 @@ export default function CharacterSelect({
             onClick={() => setSelected(c.id)}
           >
             <small>0{i + 1}</small>
+            <WeaponMark style={c.style} size={38} />
             <b>{c.name}</b>
             <span>{c.weapon}</span>
           </button>

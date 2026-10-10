@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
-// Trails follow the actual weapon edges. A fresh attack clears history so a
-// camera cut or a different fighter cannot leave a floating ring in the arena.
+// Trails follow the actual weapon edges for the last 160 milliseconds. Their
+// lifetime is independent of frame rate, so a stalled frame or a stepped capture
+// clock cannot bridge seconds of movement with a giant translucent triangle.
 export function createCombatEffects(scene) {
   const root=new THREE.Group();scene.add(root);
   const histories=[[],[]],positions=histories.map(()=>new Float32Array(12*18));
   const trails=positions.map(data=>{
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(data,3));
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(data,3));g.setDrawRange(0,0);
     const m=new THREE.MeshBasicMaterial({color:'#9eeedd',transparent:true,opacity:.45,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
     const mesh=new THREE.Mesh(g,m);mesh.frustumCulled=false;root.add(mesh);return mesh;
   });
@@ -28,9 +29,9 @@ export function createCombatEffects(scene) {
   const contactLight=new THREE.PointLight('#ffe2b1',0,5);root.add(contactLight);
   let lastId=null,ghosts=[],history=[];
   const ghostMaterial=new THREE.MeshBasicMaterial({color:'#83ffd6',transparent:true,opacity:.10,depthWrite:false,blending:THREE.AdditiveBlending});
-  const clearGhosts=()=>{ghosts.forEach(g=>root.remove(g));ghosts=[];history=[];};
+  const clearGhosts=()=>{ghosts.forEach(g=>{const skeletons=new Set();g.traverse(o=>{if(o.isSkinnedMesh)skeletons.add(o.skeleton);});skeletons.forEach(s=>s.dispose());root.remove(g);});ghosts=[];history=[];};
   return {
-    reset(){root.visible=false;histories.forEach(h=>h.length=0);lastId=null;clearGhosts();},
+    reset(){root.visible=false;histories.forEach(h=>h.length=0);trails.forEach(t=>t.geometry.setDrawRange(0,0));lastId=null;clearGhosts();},
     update(attacker,frame,a,sign,time,low=false){
       root.visible=true;
       if(lastId!==a.id){histories.forEach(h=>h.length=0);lastId=a.id;clearGhosts();
@@ -41,22 +42,29 @@ export function createCombatEffects(scene) {
       if(ghosts.length){const bones={};attacker.root.traverse(o=>{if(o.isBone)bones[o.name]=o.quaternion.toArray();});
         history.push({x:attacker.root.position.x,y:attacker.root.position.y,z:attacker.root.position.z,r:attacker.root.rotation.y,bones});if(history.length>12)history.shift();}
       ghosts.forEach((ghost,i)=>{const past=history[Math.max(0,history.length-1-(i+1)*3)];ghost.visible=frame.progress>.25&&frame.progress<a.impactAt+.09;if(past){ghost.position.set(past.x,past.y,past.z);ghost.rotation.y=past.r;ghost.scale.copy(attacker.root.scale);ghost.traverse(o=>{if(o.isBone&&past.bones[o.name])o.quaternion.fromArray(past.bones[o.name]);});}});
-      const cutting=(a.style==='blades'||a.style==='glaive')&&frame.progress>(a.finisher?.33:a.impactAt-.11)&&frame.progress<a.impactAt+.16;
+      const cutting=(a.style==='blades'||a.style==='glaive')&&frame.progress>(a.finisher?.27:a.impactAt-.28)&&frame.progress<a.impactAt+.16;
       const segments=attacker.weaponSegments?.()||[];
       trails.forEach((trail,i)=>{
+        const h=histories[i];
         trail.visible=cutting&&Boolean(segments[i]);
-        if(!trail.visible)return;
-        const h=histories[i];h.push(segments[i]);if(h.length>13)h.shift();
+        if(!trail.visible){h.length=0;trail.geometry.setDrawRange(0,0);return;}
+        // Store snapshots: weaponSegments may reuse its vector instances.
+        if(h.length&&time<h.at(-1).time)h.length=0;
+        while(h.length&&time-h[0].time>.16)h.shift();
+        const sample={time,segment:segments[i].map(v=>v.clone())};
+        if(h.length&&h.at(-1).time===time)h[h.length-1]=sample;else h.push(sample);
+        if(h.length>13)h.shift();
         const data=positions[i];let count=0;
         for(let j=1;j<h.length;j++){
-          const [base,tip]=h[j-1],[base2,tip2]=h[j];
+          const [base,tip]=h[j-1].segment,[base2,tip2]=h[j].segment;
           for(const v of [base,tip,tip2,base,tip2,base2]){v.toArray(data,count);count+=3;}
         }
         trail.geometry.setDrawRange(0,count/3);trail.geometry.attributes.position.needsUpdate=true;
-        trail.material.color.set(a.color);trail.material.opacity=(1-frame.returnHome)*.40;
+        trail.material.color.set(a.color);trail.material.opacity=(1-frame.returnHome)*(a.finisher?.24:.32);
       });
-      const age=Math.max(0,frame.progress-a.impactAt),impact=!a.avoided&&frame.progress>=a.impactAt&&age<.20;
-      const contact=new THREE.Vector3(sign*(2.1+frame.defender.x),a.style==='brawler'&&a.finisher?.55:2.02,.12);
+      const contactAt=frame.contactAt??a.impactAt;
+      const age=Math.max(0,frame.progress-contactAt),impact=!a.avoided&&frame.progress>=contactAt&&age<.12;
+      const contact=frame.contactPosition?new THREE.Vector3(...frame.contactPosition):new THREE.Vector3(sign*(2.1+frame.defender.x),2.02+frame.defender.y,.12);
       sparks.visible=impact||(!a.avoided&&frame.secondaryImpact>.1);
       if(sparks.visible){
         const travel=age*(a.finisher?22:14);
@@ -68,10 +76,10 @@ export function createCombatEffects(scene) {
           const end=start.clone().addScaledVector(direction,.10+age*.7);
           start.toArray(sparkData,i*6);end.toArray(sparkData,i*6+3);
         }
-        sparkGeometry.attributes.position.needsUpdate=true;sparks.material.opacity=impact?1-age/.20:frame.secondaryImpact;
+        sparkGeometry.attributes.position.needsUpdate=true;sparks.material.opacity=(impact?1-age/.12:frame.secondaryImpact)*(frame.contactStrength??1);
       }
       dust.forEach((s,i)=>{
-        s.visible=impact&&(a.style==='brawler'||a.finisher);
+        s.visible=impact&&(a.style==='brawler'||a.finisher)&&frame.defender.y<.5;
         const spread=age*12,angle=i*2.399;
         s.position.set(contact.x+Math.cos(angle)*spread,.12+age*(i%3),Math.sin(angle)*spread);
         s.scale.setScalar(.3+age*5);s.material.opacity=Math.max(0,1-age/.20)*.6;
@@ -90,6 +98,6 @@ export function createCombatEffects(scene) {
         }shards.instanceMatrix.needsUpdate=true;
       }
     },
-    dispose(){clearGhosts();ghostMaterial.dispose();dustMap.dispose();scene.remove(root);root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});},
+    dispose(){clearGhosts();ghostMaterial.dispose();dustMap.dispose();scene.remove(root);root.traverse(o=>{if(o.isInstancedMesh)o.dispose();o.geometry?.dispose();o.material?.dispose();});},
   };
 }

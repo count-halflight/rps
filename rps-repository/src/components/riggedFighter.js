@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { createWardrobe } from "./wardrobe.js";
 import { createPoseRig } from "./poseRig.js";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 export function createRiggedFighter(
   gltf,
   accent = "#83ffd6",
@@ -35,9 +36,9 @@ export function createRiggedFighter(
   const rig = createPoseRig(model, body, style);
   const palms = hands.map((hand,i) => hand.worldToLocal(bone(`finger3-1.${i===0?"L":"R"}`).getWorldPosition(new THREE.Vector3())).multiplyScalar(.7));
   const steel = new THREE.MeshStandardMaterial({
-      color: "#70797c",
-      metalness: 0.7,
-      roughness: 0.32,
+      color: "#485563",
+      metalness: 0.85,
+      roughness: 0.3,
     }),
     glow = new THREE.MeshStandardMaterial({
       color: accent,
@@ -45,6 +46,10 @@ export function createRiggedFighter(
       emissiveIntensity: 1.8,
       roughness: 0.45,
     });
+  const edge = new THREE.MeshStandardMaterial({color:'#becbd2',metalness:.88,roughness:.22});
+  const grip = new THREE.MeshStandardMaterial({color:'#161b22',roughness:.85});
+  const brass = new THREE.MeshStandardMaterial({color:'#907347',metalness:.76,roughness:.34});
+  const prism = new THREE.MeshPhysicalMaterial({color:'#755396',metalness:.17,roughness:.12,clearcoat:1,clearcoatRoughness:.10,emissive:'#57358c',emissiveIntensity:.3,transparent:true,opacity:.92});
   const gear = { rock: [], paper: [], scissors: [] };
   const add = (parent, geo, mat, pos) => {
     const m = new THREE.Mesh(geo, mat);
@@ -57,32 +62,31 @@ export function createRiggedFighter(
     const rock = new THREE.Group();
     hand.add(rock);
     gear.rock.push(rock);
-    add(
-      rock,
-      new THREE.BoxGeometry(0.11, 0.065, 0.045),
-      steel,
-      [0, 0.115, 0.015],
-    );
-    for (let i = 0; i < 3; i++)
-      add(rock, new THREE.BoxGeometry(0.027, 0.023, 0.017), glow, [
-        (i - 1) * 0.035,
-        0.147,
-        0.028,
-      ]);
+    const glove=add(rock,new THREE.SphereGeometry(1,24,16),grip,[0,.018,0]);glove.scale.set(.067,.084,.060);
+    add(rock,new RoundedBoxGeometry(.105,.048,.043,3,.012),steel,[0,.061,.027]);
+    for(let i=0;i<4;i++){
+      const knuckle=add(rock,new THREE.SphereGeometry(.017,12,8),edge,[(i-1.5)*.025,.078,.043]);knuckle.scale.set(1,.65,.65);
+      const wrap=add(rock,new THREE.TorusGeometry(.057,.004,6,28),brass,[0,-.038+i*.013,0]);wrap.rotation.x=Math.PI/2;wrap.scale.z=.78;
+    }
+    add(rock,new RoundedBoxGeometry(.036,.026,.015,2,.006),glow,[0,.025,.058]);
     const blade = new THREE.Group();
     hand.add(blade);
     gear.scissors.push(blade);
     add(
       blade,
       new THREE.CylinderGeometry(0.022, 0.022, 0.2, 10),
-      steel,
+      grip,
       [0, 0.04, 0],
     );
-    add(blade, new THREE.BoxGeometry(0.19, 0.018, 0.035), steel, [0, -0.04, 0]);
+    for(let i=0;i<7;i++){const band=add(blade,new THREE.TorusGeometry(.023,.003,5,16),brass,[0,-.037+i*.024,0]);band.rotation.x=Math.PI/2;}
+    add(blade,new RoundedBoxGeometry(.17,.020,.034,3,.008),steel,[0,-.04,0]);
+    add(blade,new THREE.SphereGeometry(.026,16,10),brass,[0,-.075,0]);
     const shape=new THREE.Shape();
-    shape.moveTo(-.025,.10);shape.lineTo(-.025,.82);shape.lineTo(0,.98);shape.lineTo(.033,.84);shape.lineTo(.028,.10);shape.closePath();
-    add(blade,new THREE.ExtrudeGeometry(shape,{depth:.012,bevelEnabled:true,bevelThickness:.003,bevelSize:.003,bevelSegments:2,steps:1}),steel,[0,0,-.006]);
-    add(blade,new THREE.CylinderGeometry(.003,.003,.74,6),glow,[.03,.47,0]);
+    shape.moveTo(-.028,.10);shape.lineTo(-.022,.73);shape.quadraticCurveTo(-.012,.82,.004,.88);shape.lineTo(.031,.74);shape.lineTo(.031,.10);shape.closePath();
+    add(blade,new THREE.ExtrudeGeometry(shape,{depth:.016,bevelEnabled:true,bevelThickness:.0035,bevelSize:.0035,bevelSegments:3,steps:1}),edge,[0,0,-.008]);
+    const inset=new THREE.Shape();inset.moveTo(-.010,.12);inset.lineTo(-.008,.65);inset.lineTo(.003,.79);inset.lineTo(.014,.68);inset.lineTo(.015,.12);inset.closePath();
+    add(blade,new THREE.ExtrudeGeometry(inset,{depth:.019,bevelEnabled:false}),steel,[0,0,-.0095]);
+    add(blade,new THREE.CylinderGeometry(.0025,.0025,.49,6),glow,[.013,.37,.011]);
     const field = new THREE.Group();
     hand.add(field);
     gear.paper.push(field);
@@ -104,7 +108,7 @@ export function createRiggedFighter(
   } else if (style === "brawler") {
     gear.rock.forEach((g) => {
       g.visible = true;
-      g.scale.setScalar(1.7);
+      g.scale.setScalar(1.12);
     });
   } else if (style === "mage" || style === "glaive") {
     add(
@@ -113,22 +117,29 @@ export function createRiggedFighter(
       steel,
       [0, -0.15, 0],
     );
+    for(let i=0;i<9;i++){const band=add(kit,new THREE.TorusGeometry(.027,.003,6,18),brass,[0,-.37+i*.035,0]);band.rotation.x=Math.PI/2;}
+    for(const y of [-1.08,.69]){const collar=add(kit,new THREE.CylinderGeometry(.036,.036,.047,16),brass,[0,y,0]);}
     if (style === "mage") {
       const crystal = add(
         kit,
-        new THREE.OctahedronGeometry(0.14),
-        glow,
+        new THREE.IcosahedronGeometry(0.10,0),
+        prism,
         [0, 0.89, 0],
       );
-      crystal.scale.y = 1.8;
-      add(kit, new THREE.TorusGeometry(0.2, 0.018, 6, 24), steel, [0, 0.85, 0]);
+      crystal.scale.y = 1.75;
+      const halo=add(kit,new THREE.TorusGeometry(.15,.008,8,40),brass,[0,.85,0]);halo.rotation.y=.65;
+      const inner=add(kit,new THREE.TorusGeometry(.113,.004,6,40),edge,[0,.85,0]);inner.rotation.x=.55;
+      for(const x of [-.08,.08]){const prong=add(kit,new THREE.ConeGeometry(.019,.20,8),edge,[x,.78,0]);prong.rotation.z=x<0?-.45:.45;}
     } else {
       const shape=new THREE.Shape();
-      shape.moveTo(0,.65);shape.bezierCurveTo(.05,.91,.21,1.21,.10,1.45);
-      shape.bezierCurveTo(.02,1.28,-.10,1.13,-.05,.72);shape.closePath();
-      add(kit,new THREE.ExtrudeGeometry(shape,{depth:.018,bevelEnabled:true,bevelThickness:.004,bevelSize:.004,bevelSegments:3}),steel,[0,0,-.009]);
-      add(kit,new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(new THREE.Vector3(.02,.77,0),new THREE.Vector3(.15,1.18,0),new THREE.Vector3(.10,1.42,0)),24,.004,6,false),glow,[0,0,0]);
-      add(kit, new THREE.BoxGeometry(0.34, 0.04, 0.08), steel, [0, 0.68, 0]);
+      shape.moveTo(-.024,.69);shape.bezierCurveTo(-.006,.90,.16,1.15,.11,1.36);
+      shape.bezierCurveTo(.07,1.23,-.065,1.08,-.052,.77);shape.closePath();
+      add(kit,new THREE.ExtrudeGeometry(shape,{depth:.024,bevelEnabled:true,bevelThickness:.004,bevelSize:.004,bevelSegments:3}),edge,[0,0,-.012]);
+      const inset=new THREE.Shape();inset.moveTo(-.011,.76);inset.bezierCurveTo(.012,.95,.092,1.09,.102,1.23);inset.bezierCurveTo(.03,1.12,-.030,.96,-.028,.81);inset.closePath();
+      add(kit,new THREE.ExtrudeGeometry(inset,{depth:.029,bevelEnabled:false}),steel,[0,0,-.0145]);
+      add(kit,new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(new THREE.Vector3(-.017,.78,.018),new THREE.Vector3(.07,1.03,.018),new THREE.Vector3(.099,1.24,.018)),28,.0025,6,false),glow,[0,0,0]);
+      add(kit,new RoundedBoxGeometry(.19,.030,.051,3,.010),brass,[0,.68,0]);
+      const butt=add(kit,new THREE.ConeGeometry(.032,.16,12),edge,[0,-1.18,0]);butt.rotation.z=Math.PI;
     }
   } else if (style === "archer") {
     const points = [];
@@ -140,14 +151,18 @@ export function createRiggedFighter(
       kit,
       new THREE.TubeGeometry(
         new THREE.CatmullRomCurve3(points),
-        24,
-        0.025,
-        6,
+        48,
+        0.028,
+        10,
         false,
       ),
       steel,
       [0, 0.05, 0],
     );
+    for(const sign of [-1,1]){
+      const limb=add(kit,new RoundedBoxGeometry(.055,.21,.045,3,.008),brass,[0,.05+sign*.44,.235]);limb.rotation.x=sign*.48;
+      add(kit,new THREE.SphereGeometry(.045,16,10),steel,[0,.05+sign*.61,.025]);
+    }
     const stringGeometry = new THREE.BufferGeometry();
     stringGeometry.setAttribute('position', new THREE.Float32BufferAttribute([0,-.60,0,0,.05,0,0,.70,0],3));
     bowString = new THREE.Line(stringGeometry, new THREE.LineBasicMaterial({color:accent}));
@@ -155,7 +170,7 @@ export function createRiggedFighter(
     add(
       kit,
       new THREE.CylinderGeometry(0.018, 0.018, 0.18, 8),
-      steel,
+      grip,
       [0, 0.05, 0],
     );
     const shaft = add(
@@ -165,11 +180,13 @@ export function createRiggedFighter(
       [0, .05, .34],
     );
     shaft.rotation.x = Math.PI / 2;
+    const arrowHead=add(kit,new THREE.ConeGeometry(.026,.10,4),edge,[0,.05,.70]);arrowHead.rotation.x=Math.PI/2;
+    for(const x of [-.014,.014])add(kit,new THREE.BoxGeometry(.003,.040,.080),brass,[x,.05,.055]);
   }
   const orient = p => {
     const orientation=body.getWorldQuaternion(new THREE.Quaternion());
     hands.forEach((hand,i)=>{
-      const group=style==='blades'?gear.scissors[i]:i===0?kit:null;
+      const group=style==='blades'?gear.scissors[i]:style==='brawler'?gear.rock[i]:i===0?kit:null;
       if(!group)return;
       group.position.copy(palms[i]);
       const tilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(p.weaponPitch??.18,p.weaponSweep??0,style==='glaive'?-.55:i===0?.16:-.16));
@@ -237,9 +254,13 @@ export function createRiggedFighter(
     style,
     model,
     equipAppearance(appearance){wardrobe?.dispose();wardrobe=createWardrobe({root,body,model},appearance);
-      model.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material])if(/jacket/i.test(m.name)){
+      const tint=new THREE.Color(appearance.color||accent);
+      glow.color.copy(tint);glow.emissive.copy(tint);
+      model.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material]){
         m.userData.originalColor??=m.color.clone();m.color.copy(m.userData.originalColor);
-        if(appearance.id)m.color.lerp(new THREE.Color(appearance.color||accent).multiplyScalar(.07),.65);
+        if(appearance.id&&/jacket/i.test(m.name))m.color.lerp(tint.clone().multiplyScalar(.18),.7);
+        if(appearance.id&&/Stitching/.test(m.name))m.color.lerp(tint,.55);
+        if(appearance.id&&/^Skin/.test(m.name))m.color.multiplyScalar(.94+((appearance.lookSeed||0)%5)*.03);
       }});
     },
     gripPoints:()=>({rightPalm:hands[1].localToWorld(palms[1].clone()),shaft:kit.localToWorld(new THREE.Vector3(0,gripY,gripZ))}),

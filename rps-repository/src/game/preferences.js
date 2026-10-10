@@ -54,6 +54,7 @@ export const DEFAULT_PREFERENCES = {
   music: true,
   quality: "auto",
   motion: "system",
+  cinematicQte: true,
   skin: "echo",
   liveDossiers: true,
 };
@@ -72,6 +73,7 @@ export function loadPreferences(storage) {
       motion: ["system", "reduced"].includes(value.motion)
         ? value.motion
         : "system",
+      cinematicQte: typeof value.cinematicQte === 'boolean' ? value.cinematicQte : true,
       skin: FRAME_FINISHES.some((f) => f.id === value.skin)
         ? value.skin
         : "echo",

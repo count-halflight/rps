@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { mkdir,writeFile } from "node:fs/promises";
+import { mkdir,writeFile,readdir } from "node:fs/promises";
 import { launchBrowser,delay } from "./browser.mjs";
 import { newRun } from "../src/game/engine.js";
+import { spawnSync } from 'node:child_process';
 const b = await launchBrowser(),
   url = process.env.TEST_URL || "http://127.0.0.1:3001/";
 const checks=[],pass=s=>{checks.push(s);console.log('PASS',s);};
@@ -10,10 +11,10 @@ try {
   await mkdir('artifacts',{recursive:true});
   await b.call('Page.addScriptToEvaluateOnNewDocument',{source:`{const Native=window.AudioContext;window.__audio=[];window.AudioContext=class extends Native{constructor(...args){super(...args);this.__meters=[];window.__audio.push(this);}createAnalyser(){const a=super.createAnalyser();this.__meters.push(a);return a;}};}`});
   await b.call("Emulation.setDeviceMetricsOverride", {
-    width: 390,
-    height: 844,
+    width: 1280,
+    height: 800,
     deviceScaleFactor: 1,
-    mobile: true,
+    mobile: false,
   });
   await b.navigate(url);
   await b.waitFor("document.querySelector('.start-button')");
@@ -26,6 +27,10 @@ try {
       report.files.some((f) => f.endsWith(`/models/${name}-human.glb`)),
     );
   pass("All five fighter assets are cached");
+  const scenery=(await readdir('public/art')).filter(name=>name.endsWith('.webp'));
+  assert.equal(scenery.length,6,'six individual district backgrounds');
+  for(const name of scenery)assert.ok(report.files.some(path=>path.endsWith(`/art/${name}`)),name+' must be cached');
+  pass('All six full-resolution district backgrounds are cached');
   const r = newRun(37, null, "vex");
   r.encounterSeen=true;
   r.enemy.signal = 2;
@@ -33,13 +38,15 @@ try {
   await b.evaluate(
     `localStorage.setItem('trinity-save-v1',${JSON.stringify(JSON.stringify(r))});localStorage.setItem('trinity-preferences-v1',JSON.stringify({quality:'low',motion:'reduced',liveDossiers:false}));`,
   );
+  await b.navigate(new URL('proof/index.html',url).href);
+  await b.waitFor("document.title==='Trinity choreography proof' && navigator.serviceWorker.controller");
   await b.call("Network.emulateNetworkConditions", {
     offline: true,
     latency: 0,
     downloadThroughput: 0,
     uploadThroughput: 0,
   });
-  await b.reload();
+  await b.navigate(url);
   await b.waitFor("document.querySelector('.start-button')");
   await b.click(".start-button");
   await b.waitFor(
@@ -47,6 +54,9 @@ try {
     30000,
   );
   pass("Entry page, fonts, scripts, arena, and fighters load offline");
+  pass('Visiting the gallery online preserves the cached game for an offline return');
+  assert.equal(await b.evaluate("document.querySelector('.game-surface .three-arena').dataset.backdrop"),'loaded');
+  assert.equal(await b.evaluate("typeof document.querySelector('.game-surface .three-arena').__captureState"),'undefined','production excludes capture hooks');
   const audio=await meter();assert.equal(audio.state,'running');assert.ok(audio.peak>.005,`Offline music RMS ${audio.peak}`);
   await b.click('[aria-label="Mute sound"]');await delay(150);
   assert.ok((await meter()).peak<.0005,'Mute must silence the real output');
@@ -54,6 +64,16 @@ try {
   pass('Original music plays offline; mute and resume change the measured output');
   await b.click('.game-surface .fullscreen-button');await b.waitFor('document.fullscreenElement');await b.key('f','KeyF');await b.waitFor('!document.fullscreenElement');
   pass('Real fullscreen enters and exits in the production build');
+  await b.click('.menu-button');await b.waitFor("document.querySelector('.game-surface .three-arena').dataset.paused==='true'");
+  await b.call('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});await delay(250);
+  // Inspect the frozen drawing buffer behind the modal's dark blur layer.
+  await b.evaluate("document.querySelector('.modal-shade').style.visibility='hidden'");
+  await b.screenshot('artifacts/offline-paused-resize.png');
+  const pixels=spawnSync('python3',['-c',"from PIL import Image,ImageStat;im=Image.open('artifacts/offline-paused-resize.png').convert('RGB');w,h=im.size;print(max(ImageStat.Stat(im.crop((w*.05,h*.28,w*.30,h*.60))).stddev))"],{encoding:'utf8'});
+  assert.equal(pixels.status,0,pixels.stderr);assert.ok(Number(pixels.stdout)>12,'The frozen arena must remain painted after a paused resize');
+  await b.evaluate("document.querySelector('.modal-shade').style.visibility=''");
+  await b.key('Escape','Escape');await b.waitFor("document.querySelector('.game-surface .three-arena').dataset.paused==='false'");
+  pass('A paused desktop resize keeps the frozen scenery visible and resumes normally');
   await b.click(".weapon-card");
   await b.waitFor("document.querySelector('.attack-card')");
   await b.click(".attack-card");

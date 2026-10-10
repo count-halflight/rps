@@ -7,13 +7,15 @@ import{newRun,WEAPONS,counterFor}from'../src/game/engine.js';
 import{inspectCatalog}from'./choreography-proof.mjs';
 const url=process.env.TEST_URL||'http://127.0.0.1:5173/';
 const report=inspectCatalog();assert.equal(report.collisions.length,0,'near-identical timelines');
-const list=process.env.CAPTURE_SAMPLE?ATTACK_CATALOG.filter(s=>s.id===process.env.CAPTURE_SAMPLE):ATTACK_CATALOG;
+const sampleIds=process.env.CAPTURE_SAMPLE?.split(',');
+const list=sampleIds?ATTACK_CATALOG.filter(s=>sampleIds.includes(s.id)):ATTACK_CATALOG;
+assert.ok(list.length,'capture selection must match at least one attack');
 await mkdir('artifacts/choreography/frames',{recursive:true});await mkdir('public/proof',{recursive:true});
 const b=await launchBrowser();const records=[];
 try{
  await b.call('Emulation.setDeviceMetricsOverride',{width:960,height:640,deviceScaleFactor:1,mobile:false});
  console.log('START');await b.navigate(`${url}?proof=1`);await b.waitFor("document.querySelector('.start-button')");
- await b.evaluate("localStorage.setItem('trinity-preferences-v1',JSON.stringify({quality:'low',motion:'full',liveDossiers:false,music:false,volume:0}));localStorage.removeItem('trinity-save-v1');");
+ await b.evaluate("localStorage.setItem('trinity-preferences-v1',JSON.stringify({quality:'low',motion:'full',cinematicQte:false,liveDossiers:false,music:false,volume:0}));localStorage.removeItem('trinity-save-v1');");
  console.log('PREFS');await b.reload();await b.waitFor("document.querySelector('.start-button')");await b.click('.start-button');await b.waitFor("document.querySelector('.character-select .three-arena')?.dataset.frameAsset==='loaded'",60000);console.log('SELECT');await b.click('.fighter-confirm');
  await b.waitFor("document.querySelector('.game-surface .three-arena')?.dataset.frameAsset==='loaded'",60000);
  console.log('LOADED');
@@ -25,6 +27,7 @@ try{
  await delay(50);await b.evaluate('__advance(0)');
  for(const s of list){
   const r=newRun(417+records.length,null,s.character);r.encounterSeen=true;r.charge=100;r.enemy.confidence=100;
+  r.turn=s.finisherIndex||0;r.fightTurn=r.turn;
   const enemy=WEAPONS.find(w=>counterFor(w.id,r.enemy.district.reverse).id===s.weapon);r.enemy.signal=WEAPONS.indexOf(enemy);
   if(s.final)r.enemy.hp=1;else{r.enemy.hp=9999;r.enemy.maxHp=9999;}
   await b.evaluate(`window.dispatchEvent(new CustomEvent('trinity:proof-run',{detail:${JSON.stringify(r)}}))`);await delay(30);await b.evaluate('__advance(0)');
@@ -34,21 +37,32 @@ try{
   await b.click(`.attack-card:nth-child(${s.variant+1})`);
   await b.waitFor(`document.querySelector('.game-surface .three-arena')?.__captureState?.().animation?.title===${JSON.stringify(s.title)}`);
   await b.evaluate('__advance(0)');await delay(50);await b.evaluate('__advance(0)');
-  let last=0;const paths=[];
-  for(const [label,p]of [['anticipation',.13],['travel',.30],['impact',s.impact],['recovery',.88]]){
-   const ms=s.duration*p-last;await b.evaluate(`__advance(${ms})`);await delay(100);last=s.duration*p;
-   await b.evaluate('__advance(0)');
-   const path=`artifacts/choreography/frames/${s.id}-${label}.png`;await b.screenshot(path);paths.push({label,path,progress:p});
+  let last=0;const paths=[];let showcase=null;
+  const beats=[['anticipation',.13],['travel',.30],...(s.final?[['world',.55]]:[]),['impact',s.impact],['recovery',s.final?.94:.88]];
+  for(const [label,p]of beats){
+   // Sample the last 60 ms before the review beat so ribbons follow a recent
+   // blade edge, rather than bridging the seconds between sparse stills.
+   const ms=s.duration*p-last,warm=Math.min(60,ms);
+   await b.evaluate(`__advance(${ms-warm})`);await delay(20);
+   await b.evaluate(`__advance(${warm})`);await delay(100);last=s.duration*p;
+   const path=`artifacts/choreography/frames/${s.id}-${label}.png`;await b.screenshot(path);
+   if(label==='world')showcase={label,path,progress:p};else paths.push({label,path,progress:p});
    const cinematic=await b.evaluate("document.querySelector('.game-surface .three-arena').dataset.cinematic");assert.notEqual(cinematic,'idle',s.id+' '+label);
    const progress=await b.evaluate("Number(document.querySelector('.game-surface .three-arena').dataset.progress)");assert.ok(Math.abs(progress-p)<.002,s.id+' '+label+' clock '+progress);
   }
   await b.evaluate(`__advance(${s.duration-last+100})`);await delay(20);
-  records.push({id:s.id,title:s.title,character:s.character,frames:paths});console.log('CAPTURE',s.id);
+  records.push({id:s.id,title:s.title,character:s.character,frames:paths,showcase});console.log('CAPTURE',s.id);
  }
  assert.equal(b.errors.length,0,JSON.stringify(b.errors));
+ assert.equal(b.requests.length,0,JSON.stringify(b.requests));
 }catch(e){console.error('BROWSER',b.errors,b.requests.filter(r=>r.status>=400));console.error(await b.evaluate('document.body.innerText.slice(0,1200)'));throw e;}finally{await b.close();}
+if(sampleIds){
+ await writeFile('artifacts/choreography/sample-captures.json',JSON.stringify(records,null,2));
+ console.log('Sample captures saved; full public gallery preserved.');
+}else{
 await writeFile('artifacts/choreography/captures.json',JSON.stringify(records,null,2));
-await writeFile('public/proof/captures.json',JSON.stringify({sequences:records.length,totalFrames:records.reduce((n,r)=>n+r.frames.length,0),method:'Real hand and attack controls; the development-only presentation clock stepped to four fixed beats.',captures:records.map(r=>({...r,frames:r.frames.map(({label,progress})=>({label,progress})),sheet:r.character+'.png'}))},null,2));
+await writeFile('public/proof/captures.json',JSON.stringify({sequences:records.length,totalFrames:records.reduce((n,r)=>n+r.frames.length+(r.showcase?1:0),0),method:'Real hand and attack controls; the development-only presentation clock stepped to four review beats, plus one midway world shot per finisher.',captures:records.map(r=>({...r,frames:r.frames.map(({label,progress})=>({label,progress})),showcase:r.showcase?{progress:r.showcase.progress,image:`cinematics/${r.id}.webp`}:null,sheet:r.character+'.png'}))},null,2));
 await writeFile('public/proof/distances.json',JSON.stringify(report,null,2));
 await writeFile('public/proof/distances.csv','sequence_a,sequence_b,pose_distance,camera_distance,combined_distance\n'+report.table.map(r=>[r.a,r.b,r.pose,r.camera,r.combined].join(',')).join('\n'));
 const sheets=spawnSync('python3',['scripts/contact-sheets.py'],{stdio:'inherit'});if(sheets.status)process.exitCode=sheets.status;
+}

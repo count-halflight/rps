@@ -105,6 +105,19 @@ const rows={
  hammerFinal:[.16,.84,.65,-.14,1.12,.5,.3,1.92,.5,.9],
  tempestFinal:[.29,1.57,.61,-.16,1.77,.50,1.4,1.32,3.0,.23],
  gateFinal:[.08,.96,.73,-.12,1.30,.53,1.1,1.98,.75,.78],
+ // Suspended and reverse-facing poses for the directed finishers. These are
+ // wrist targets, not rotations of an unarticulated character mesh.
+ airKick:[.34,1.48,.20,-.31,1.77,.10,-.9,0,.6,-.42],
+ divePunch:[.23,1.74,.26,-.09,1.14,.73,.7,0,0,.65],
+ reverseCross:[-.09,1.84,.68,.18,1.26,.65,-1.25,1.43,-1.6,.22],
+ knifeFall:[.28,2.02,.08,-.22,1.92,.09,.32,-.72,.45,-.28],
+ doublePalm:[.14,1.42,.71,-.14,1.42,.71,0,0,0,.35],
+ voidPinch:[.32,1.81,.52,-.20,1.72,.63,-.65,-.4,.55,-.08],
+ starAim:[.20,1.97,.59,-.14,1.89,.05,-.72,-.69,-.5,-.23],
+ glaiveHook:[.34,1.24,.56,-.24,1.55,.34,-1.15,1.42,-1.6,.41],
+ galeSpiral:[.17,1.92,.54,-.13,1.78,.45,.88,1.32,2.7,-.28],
+ splitGuard:[.26,1.82,.40,-.27,1.04,.48,-.25,.95,-.65,.18],
+ reverseShot:[-.05,1.79,.70,-.29,1.74,.10,-1.35,.19,-.6,.17],
 };
 export const POSE_KEYS=Object.fromEntries(Object.entries(rows).map(([id,v])=>[id,{handL:v.slice(0,3),handR:v.slice(3,6),torsoYaw:v[6],weaponPitch:v[7],weaponSweep:v[8],torsoPitch:v[9]}]));
 

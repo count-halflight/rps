@@ -1,108 +1,99 @@
 import * as T from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-// Original modular tailoring. Encounter kits are geometry, not colour swaps.
-export function createWardrobe(fighter,appearance={}){
- const group=new T.Group(),pieces=[],cloth=[];fighter.body.add(group);
- const color=new T.Color(appearance.color||'#538987');
- const fabric=new T.MeshStandardMaterial({color:color.clone().multiplyScalar(.065),roughness:.9,side:T.DoubleSide});
- fighter.model.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material])if(/jacket/i.test(m.name)){fabric.normalMap=m.normalMap;fabric.roughnessMap=m.roughnessMap;fabric.normalScale=m.normalScale.clone();}});
- const metal=new T.MeshStandardMaterial({color:color.clone().multiplyScalar(.7),metalness:.75,roughness:.33});
- const dark=new T.MeshStandardMaterial({color:'#151b21',roughness:.62});
- const glow=new T.MeshStandardMaterial({color,emissive:color,emissiveIntensity:1.3,roughness:.4});
- const skin=new T.MeshStandardMaterial({color:'#5b352a',roughness:.7});
- fabric.name='Tailored jacket';
- const mats=[fabric,metal,dark,glow,skin];
+
+// The Blender assets contain complete, skinned outfits. Encounter tailoring
+// adds cloth and practical equipment without hiding the human silhouette.
+export function createWardrobe(fighter, appearance = {}) {
+ const pieces=[],cloth=[],color=new T.Color(appearance.color||'#538987');
+ const fabric=new T.MeshStandardMaterial({color:color.clone().multiplyScalar(.25),roughness:.94,side:T.DoubleSide});
+ const lining=new T.MeshStandardMaterial({color:color.clone().multiplyScalar(.56),roughness:.89,side:T.DoubleSide});
+ const leather=new T.MeshStandardMaterial({color:'#15171b',roughness:.67});
+ const metal=new T.MeshStandardMaterial({color:'#806b48',metalness:.72,roughness:.38});
+ const silver=new T.MeshStandardMaterial({color:'#879397',metalness:.78,roughness:.28});
+ const glow=new T.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.7,roughness:.4});
+ const mats=[fabric,lining,leather,metal,silver,glow];
+ fighter.model.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material])if(/jacket/i.test(m.name)){
+  fabric.normalMap=m.normalMap;fabric.roughnessMap=m.roughnessMap;if(m.normalScale)fabric.normalScale=m.normalScale.clone();
+ }});
  const bone=n=>fighter.model.getObjectByName(n.replaceAll('.',''));
  function mount(geo,mat,anchor,offset,rotation=[0,0,0]){
-  const parent=bone(anchor)||fighter.body,m=new T.Mesh(geo,mat);
-  parent.updateWorldMatrix(true,false);
+  const parent=bone(anchor)||fighter.body,mesh=new T.Mesh(geo,mat);parent.updateWorldMatrix(true,false);
   const frame=fighter.model.getWorldQuaternion(new T.Quaternion());
   const point=parent.getWorldPosition(new T.Vector3()).add(new T.Vector3(...offset).applyQuaternion(frame));
-  parent.add(m);m.position.copy(parent.worldToLocal(point));
-  m.quaternion.copy(parent.getWorldQuaternion(new T.Quaternion()).invert().multiply(frame).multiply(new T.Quaternion().setFromEuler(new T.Euler(...rotation))));m.castShadow=true;
-  pieces.push(m);return m;
+  parent.add(mesh);mesh.position.copy(parent.worldToLocal(point));
+  mesh.quaternion.copy(parent.getWorldQuaternion(new T.Quaternion()).invert().multiply(frame).multiply(new T.Quaternion().setFromEuler(new T.Euler(...rotation))));
+  mesh.castShadow=true;pieces.push(mesh);return mesh;
  }
- const plate=(anchor,p,s,mat=metal,rot)=>mount(new RoundedBoxGeometry(...s,2,Math.min(...s)*.20),mat,anchor,p,rot);
- const sphere=(anchor,p,s,mat=metal)=>{const m=mount(new T.SphereGeometry(1,16,10),mat,anchor,p);m.scale.set(...s);return m;};
- const ring=(anchor,p,r,t=.015,mat=metal,rot)=>mount(new T.TorusGeometry(r,t,6,32),mat,anchor,p,rot);
- function cloak(anchor,width,length,depth,mat=fabric){
-  const geometry=new T.PlaneGeometry(width,length,8,12),a=geometry.attributes.position;
-  for(let i=0;i<a.count;i++){const x=a.getX(i),y=a.getY(i);const drape=(length*.5-y)/length;a.setX(i,x*(.55+drape*.45));a.setY(i,y+.055*Math.cos(x/width*Math.PI*3)*drape);a.setZ(i,-depth-Math.cos(x/width*Math.PI)*.08-.05*Math.sin(y*5));}
-  geometry.computeVertexNormals();const m=mount(geometry,mat,anchor,[0,-length*.5,-.18],[0,0,0]);
-  cloth.push({mesh:m,rest:a.array.slice(),width,length});return m;
+ const pad=(anchor,p,s,mat=leather)=>mount(new RoundedBoxGeometry(...s,3,Math.min(...s)*.23),mat,anchor,p);
+ const bead=(anchor,p,s,mat=metal)=>{const m=mount(new T.SphereGeometry(1,16,12),mat,anchor,p);m.scale.set(...s);return m;};
+ const cord=(anchor,points,radius=.004,mat=metal)=>mount(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),24,radius,6,false),mat,anchor,[0,0,0]);
+ function panel(anchor,vertices,triangles,mat=fabric){
+  const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices.flat(),3));geometry.setIndex(triangles);geometry.computeVertexNormals();
+  return mount(geometry,mat,anchor,[0,0,0]);
  }
+ function cape(anchor,width,length,offset=-.16,mat=fabric,asymmetric=false){
+  const geometry=new T.PlaneGeometry(width,length,14,18),a=geometry.attributes.position;
+  for(let i=0;i<a.count;i++){const x=a.getX(i),y=a.getY(i),t=(length/2-y)/length;
+   a.setX(i,x*(.43+.57*t));a.setY(i,y+(asymmetric?x*.3:0)+.018*Math.cos(x*18)*t);
+   a.setZ(i,offset-.08*Math.cos(x/width*Math.PI)+.016*Math.sin(x*35)*t);
+  }geometry.computeVertexNormals();const m=mount(geometry,mat,anchor,[0,-length/2-.025,0]);cloth.push({mesh:m,rest:a.array.slice(),length});return m;
+ }
+ function lapels(mat=lining,long=false){for(const s of [-1,1])panel('spine01',[[s*.075,.02,.14],[s*.19,-.13,.19],[s*.085,long?-.46:-.28,.165],[s*.048,-.11,.18]],[0,1,2,0,2,3],mat);}
+ function scarf(){panel('neck03',[[-.115,-.08,.10],[.12,-.08,.10],[.105,-.15,.13],[-.105,-.15,.13]],[0,1,2,0,2,3],lining);cape('spine01',.13,.57,-.14,lining,true);}
+ function cap(mat=leather,captain=false){
+  mount(new T.CylinderGeometry(.12,.14,.10,32,1,true),mat,'head',[0,.22,.012]);
+  mount(new T.CircleGeometry(.12,32),mat,'head',[0,.27,.012],[-Math.PI/2,0,0]);
+  panel('head',[[-.14,.17,.07],[.14,.17,.07],[.11,.155,.195],[-.11,.155,.195]],[0,1,2,0,2,3],mat);
+  if(captain)cord('head',[[-.12,.183,.04],[-.09,.18,.124],[0,.178,.15],[.09,.18,.124],[.12,.183,.04]],.006,metal);
+ }
+ function mantle(mat=fabric,w=.34){panel('spine01',[[-w,-.03,.015],[-w,-.23,-.07],[-.21,-.40,-.19],[.21,-.40,-.19],[w,-.23,-.07],[w,-.03,.015],[.15,.02,-.12],[-.15,.02,-.12]],[0,1,7,1,2,7,2,3,7,3,6,7,3,4,6,4,5,6],mat);}
  const kit=appearance.kit||{},elite=appearance.elite;
- if(kit.layer==='cape')cloak('spine01',elite?.85:.65,elite?1.25:.85,.08);
- if(kit.layer==='coat'){cloak('spine02',.60,.85,.13);for(const side of ['L','R'])plate('upperleg01.'+side,[0,-.13,.07],[.20,.48,.06],fabric);}
- if(kit.layer==='vest'||kit.layer==='apron'){plate('spine02',[0,-.02,.16],[.43,.4,.055],fabric);if(kit.layer==='apron')cloak('spine04',.48,.56,-.15);}
- if(kit.layer==='hood'||kit.layer==='veil'){
-  const hood=mount(new T.SphereGeometry(.19,24,12,0,Math.PI*2,0,Math.PI*.7),fabric,'head',[0,.12,.055]);hood.scale.set(1,1.2,1);
-  if(kit.layer==='veil')cloak('head',.4,.7,.13);
+ // Player models need no second box-shaped vest or thick torus collar.
+ if(appearance.id&&!appearance.boss){
+  if(kit.layer==='cape'||kit.layer==='veil')cape('spine01',elite?.83:.69,elite?1.08:.78,-.18,fabric,true);
+  if(kit.layer==='coat'){cape('spine02',.64,.85,-.20);lapels();}
+  if(kit.layer==='vest')lapels(fabric);
+  if(kit.layer==='apron')panel('spine02',[[-.18,0,.20],[.18,0,.20],[.22,-.63,.18],[-.22,-.63,.18]],[0,1,2,0,2,3],fabric);
+  if(kit.layer==='hood'){panel('head',[[-.14,.22,-.02],[0,.32,-.05],[.14,.22,-.02],[.17,-.10,-.11],[-.17,-.10,-.11]],[0,1,4,1,3,4,1,2,3],fabric);cape('spine01',.45,.42,-.16,fabric);}
+  if(kit.detail==='mask')panel('head',[[-.087,.012,.105],[0,-.04,.14],[.087,.012,.105],[.070,-.075,.10],[-.070,-.075,.10]],[0,1,4,1,3,4,1,2,3],leather);
+  if(kit.detail==='visor'){for(const s of [-1,1])pad('head',[s*.047,.10,.108],[.075,.028,.018],silver);cord('head',[[-.10,.10,.02],[-.095,.10,.10],[.095,.10,.10],[.10,.10,.02]],.004,metal);}
+  if(kit.detail==='paint')for(const s of [-1,1])cord('head',[[s*.070,.055,.104],[s*.058,.025,.122]],.002,lining);
+  if(kit.detail==='plates')for(const side of ['L','R']){bead('upperarm01.'+side,[0,-.025,0],[.11,.065,.08],leather);pad('lowerarm01.'+side,[0,-.065,.025],[.075,.16,.055],metal);cord('lowerarm01.'+side,[[-.037,-.07,.05],[0,-.085,.06],[.037,-.07,.05]],.003,lining);}
+  if(kit.detail==='collar'||kit.detail==='scarf')scarf();
+  if(kit.detail==='rings')for(const s of [-1,1])for(let i=0;i<3;i++)bead('spine01',[s*(.10+i*.022),-.13-i*.024,.17],[.013,.013,.013],metal);
+  if(kit.detail==='antenna')for(const s of [-1,1]){cord('head',[[s*.13,.13,-.025],[s*.17,.24,-.015]],.006,metal);bead('head',[s*.17,.24,-.015],[.017,.017,.017],glow);}
+  if(elite){mantle(lining,.31);lapels();cap(leather);}
  }
- if(kit.detail==='mask')plate('head',[0,.065,.13],[.17,.065,.055],dark);
- if(kit.detail==='visor')plate('head',[0,.13,.145],[.22,.042,.028],glow);
- if(kit.detail==='paint')for(const s of [-1,1])plate('head',[s*.05,.07,.13],[.007,.055,.009],fabric,[0,0,s*.3]);
- if(kit.detail==='plates')for(const side of ['L','R']){
-  sphere('upperarm01.'+side,[0,0,.025],[.16,.11,.09]);plate('lowerarm01.'+side,[0,.06,.03],[.10,.19,.08]);
- }
- if(kit.detail==='collar')ring('neck03',[0,-.10,0],.15,.025,fabric,[Math.PI/2,0,0]);
- if(kit.detail==='scarf'){ring('neck03',[0,-.10,0],.14,.026,fabric,[Math.PI/2,0,0]);cloak('spine01',.13,.65,.08);}
- if(kit.detail==='rings')for(const side of ['L','R'])ring('upperarm01.'+side,[0,.04,0],.14,.018,glow,[Math.PI/2,0,0]);
- if(kit.detail==='antenna')for(const s of [-1,1]){
-  mount(new T.CylinderGeometry(.006,.01,.4,6),metal,'head',[s*.12,.30,.015],[0,0,s*.3]);sphere('head',[s*.17,.49,.015],[.025,.025,.025],glow);
- }
- if(elite){
-  const d=appearance.district;
-  if(d===0){mount(new T.CylinderGeometry(.014,.024,.6,8),metal,'spine01',[.22,.25,-.25]);plate('spine02',[0,0,.18],[.48,.38,.07]);}
-  if(d===1){for(const side of ['L','R'])sphere('lowerarm01.'+side,[0,-.05,0],[.17,.23,.15],dark);mount(new T.CylinderGeometry(.06,.09,.5,12),metal,'spine01',[0,.20,-.27]);}
-  if(d===2)for(const side of ['L','R'])mount(new T.OctahedronGeometry(.15),metal,'upperarm01.'+side,[0,.04,0]).scale.y=1.8;
-  if(d===3)for(const sign of [-1,1])for(let i=0;i<3;i++)mount(new T.SphereGeometry(.04,10,6),glow,'spine02',[sign*.20,-.10-i*.11,.14]);
-  if(d===4)for(const sign of [-1,1])mount(new T.CylinderGeometry(.008,.02,.45,8),metal,'head',[sign*.14,.22,0],[0,0,sign*.45]);
-  if(d===5){sphere('spine02',[0,.02,-.24],[.21,.30,.12],dark);plate('head',[0,.08,.14],[.23,.07,.035],glow);}
-  ring('spine02',[0,.02,.14],.28,.035,metal);for(const s of [-1,1])plate('head',[s*.13,.18,.04],[.055,.16,.12],metal,[0,0,s*.25]);}
- // Six individually built boss silhouettes and weapons. No shared boss template.
- if(appearance.boss){
-  const type=appearance.model;
+ if(appearance.boss){const type=appearance.model;
   if(type==='rail'){
-   plate('spine02',[0,.04,.17],[.64,.56,.12]);plate('spine02',[0,.08,.40],[.58,.68,.26],dark);
-   for(const s of [-1,1]){plate('upperarm01.'+(s===1?'L':'R'),[0,.025,0],[.40,.18,.28]);plate('head',[s*.11,.20,.08],[.11,.25,.20]);}
-   plate('head',[0,.09,.12],[.24,.045,.06],glow);
-   const h=bone('wrist.R');const hammer=new T.Group();h.add(hammer);pieces.push(hammer);
-   const handle=new T.Mesh(new T.CylinderGeometry(.035,.035,1.2,12),dark);handle.position.y=.4;hammer.add(handle);
-   const head=new T.Mesh(new T.BoxGeometry(.60,.3,.32),metal);head.position.y=1;hammer.add(head);
-   for(const x of [-.25,.25]){const m=new T.Mesh(new T.BoxGeometry(.04,.32,.34),glow);m.position.set(x,1,0);hammer.add(m);}
+   cape('spine01',.94,1.18,-.21);lapels(lining,true);cap(fabric,true);
+   for(const s of [-1,1]){pad('upperarm01.'+(s===1?'L':'R'),[0,-.012,.02],[.19,.055,.12],fabric);for(let i=0;i<3;i++)cord('upperarm01.'+(s===1?'L':'R'),[[-.06+i*.045,-.035,.06],[-.06+i*.045,-.075,.06]],.005,metal);}
+   for(let i=0;i<4;i++)bead('spine02',[.075,-.07-i*.07,.19],[.011,.008,.011],metal);
+   pad('wrist.R',[0,.66,.005],[.36,.16,.18],silver);cord('wrist.R',[[0,-.20,0],[0,.64,0]],.024,leather);
+   for(const x of [-.125,.125])pad('wrist.R',[x,.66,.005],[.026,.17,.19],metal);
   }else if(type==='kiln'){
-   cloak('spine02',1.05,1.2,.18);sphere('spine02',[0,.04,.16],[.35,.30,.15],metal);
-   ring('spine02',[0,.03,.30],.20,.05,glow);
-   for(const s of [-1,1]){mount(new T.CylinderGeometry(.07,.11,.7,12),metal,'spine01',[s*.26,.25,.3],[0,0,s*.18]);ring('head',[0,.30,0],.22,.018,glow,[Math.PI/2,0,0]);}
+   mantle(lining,.39);cape('spine02',.92,1.13,-.21);lapels(leather,true);
+   panel('spine02',[[-.17,-.03,.21],[.17,-.03,.21],[.23,-.73,.17],[-.23,-.73,.17]],[0,1,2,0,2,3],leather);
+   for(const s of [-1,1]){pad('head',[s*.047,.17,.088],[.070,.039,.02],metal);bead('lowerarm01.'+(s===1?'L':'R'),[0,-.05,.012],[.11,.16,.10],leather);for(let i=0;i<4;i++)cord('lowerarm01.'+(s===1?'L':'R'),[[-.075,-.06-i*.025,.07],[0,-.06-i*.025,.10],[.075,-.06-i*.025,.07]],.006,lining);}
+   cord('spine01',[[-.10,-.05,.15],[0,-.22,.20],[.10,-.05,.15]],.006,metal);
   }else if(type==='prism'){
-   for(const s of [-1,1])for(let i=0;i<3;i++){
-    const shard=mount(new T.OctahedronGeometry(.16,0),metal,'spine01',[s*(.25+i*.12),.2-i*.08,.08]);shard.scale.y=2.2;shard.rotation.z=s*.3;
-   }
-   ring('head',[0,.16,.12],.30,.022,glow);cloak('spine04',.55,.8,.15);
-   mount(new T.OctahedronGeometry(.19,0),metal,'head',[0,.36,.02]).scale.y=1.8;
+   cape('spine01',.85,1.30,-.22,lining);lapels(fabric,true);
+   for(const s of [-1,1])for(let i=0;i<3;i++){const shard=mount(new T.OctahedronGeometry(.055),silver,'spine01',[s*(.25+i*.07),.055-i*.11,-.07]);shard.scale.y=2.3;shard.rotation.z=s*.25;}
+   cord('head',[[-.10,.18,.05],[0,.24,.10],[.10,.18,.05]],.008,metal);
+   mount(new T.RingGeometry(.024,.032,32),silver,'head',[.055,.098,.12]);cord('head',[[.083,.08,.10],[.12,-.015,.04],[.09,-.12,.01]],.0025,metal);
   }else if(type==='lantern'){
-   cloak('spine01',1.15,1.45,.15);sphere('head',[0,.30,.05],[.34,.10,.34],dark);
-   for(const s of [-1,1])for(let i=0;i<3;i++){
-    mount(new T.CylinderGeometry(.007,.007,.36+i*.10,6),metal,'spine01',[s*(.24+i*.08),-.1,.16]);
-    mount(new T.CylinderGeometry(.065,.05,.14,8),glow,'spine01',[s*(.24+i*.08),-.30-i*.08,.16]);
-   }
+   cape('spine01',1.04,1.25,-.20,lining,true);lapels(fabric,true);mount(new T.ConeGeometry(.255,.07,48,1,true),leather,'head',[0,.28,0]);
+   cord('head',[[-.13,.25,.005],[-.22,.24,-.03],[-.29,.22,-.01]],.006,metal);
+   for(const s of [-1,1])for(let i=0;i<2;i++){const x=s*(.15+i*.07);cord('spine02',[[x,-.20,.10],[x,-.40-i*.08,.12]],.0025,metal);mount(new T.CylinderGeometry(.035,.03,.09,12),glow,'spine02',[x,-.46-i*.08,.12]);cord('spine02',[[x-.033,-.42-i*.08,.12],[x+.033,-.42-i*.08,.12]],.004,metal);}
   }else if(type==='root'){
-   for(const s of [-1,1]){
-    const side=s===1?'L':'R';mount(new T.CylinderGeometry(.12,.16,.6,12),dark,'lowerarm01.'+side,[0,.13,0]);
-    for(let i=0;i<3;i++)mount(new T.CylinderGeometry(.012,.035,.55+i*.1,8),metal,'head',[s*(.13+i*.07),.25+i*.10,.12],[0,0,s*(.2+i*.17)]);
-   }
-   cloak('spine01',.85,1.4,.2);ring('spine02',[0,.05,.23],.25,.04,glow);
+   mantle(lining,.39);cape('spine01',1,1.30,-.23,fabric,true);lapels(leather);
+   for(const s of [-1,1])for(let i=0;i<3;i++){const x=s*(.07+i*.038);cord('head',[[x,.19,-.02],[x+s*.025,.28+i*.035,-.035],[x+s*.045,.32+i*.040,-.015]],.007-i*.001,metal);}
+   for(const s of [-1,1])for(let i=0;i<5;i++)panel('spine01',[[s*.18,-.04-i*.045,-.12],[s*.31,-.10-i*.045,-.08],[s*.28,-.23-i*.045,-.10]],[0,1,2],i%2?lining:fabric);
   }else if(type==='tide'){
-   sphere('head',[0,.13,.01],[.24,.25,.23],metal);plate('head',[0,.13,.23],[.27,.12,.04],glow);
-   sphere('spine02',[0,.04,.18],[.39,.37,.19],dark);for(const s of [-1,1])mount(new T.CylinderGeometry(.10,.10,.7,12),metal,'spine01',[s*.23,0,.3]);
-   cloak('spine02',.85,1.15,.17);ring('wrist.R',[0,.15,0],.27,.055,metal);plate('wrist.R',[0,.38,0],[.08,.55,.09]);
+   cape('spine01',.96,1.18,-.22);lapels(lining,true);cap(fabric,true);scarf();pad('head',[-.043,.085,.112],[.042,.030,.012],leather);cord('head',[[-.078,.097,.10],[.12,.10,-.02]],.002,leather);
+   for(const s of [-1,1])for(let i=0;i<3;i++)bead('spine02',[s*.078,-.06-i*.073,.185],[.010,.008,.010],metal);
+   cord('wrist.R',[[0,-.18,0],[0,.67,0]],.025,silver);cord('wrist.R',[[-.22,.43,0],[-.19,.57,0],[0,.69,0],[.19,.57,0],[.22,.43,0]],.036,silver);mount(new T.TorusGeometry(.062,.010,8,24),metal,'wrist.R',[0,.70,0]);
   }
  }
- return{update(time,reduced=false){
-  for(const c of cloth){const a=c.mesh.geometry.attributes.position;for(let i=0;i<a.count;i++){
-   const weight=1-(c.rest[i*3+1]+c.length*.5)/c.length;
-   a.setZ(i,c.rest[i*3+2]+(reduced?0:Math.sin(time*2.4+c.rest[i*3]*4)*.035*weight));
-  }a.needsUpdate=true;}
- },dispose(){pieces.forEach(p=>{p.parent?.remove(p);p.traverse(o=>{if(o.isMesh)o.geometry.dispose();});});fighter.body.remove(group);mats.forEach(m=>m.dispose());}};
+ return{update(time,reduced=false){for(const c of cloth){const a=c.mesh.geometry.attributes.position;for(let i=0;i<a.count;i++){const weight=1-(c.rest[i*3+1]+c.length/2)/c.length;a.setZ(i,c.rest[i*3+2]+(reduced?0:Math.sin(time*2.1+c.rest[i*3]*7)*.024*weight));}a.needsUpdate=true;}},dispose(){for(const p of pieces){p.parent?.remove(p);p.geometry.dispose();}mats.forEach(m=>m.dispose());}};
 }

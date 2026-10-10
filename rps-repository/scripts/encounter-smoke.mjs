@@ -23,7 +23,7 @@ try{
  await mkdir('artifacts/encounters',{recursive:true});
  await b.call('Emulation.setDeviceMetricsOverride',{width:960,height:640,deviceScaleFactor:1,mobile:false});
  await b.navigate(`${url}?proof=1`);await b.waitFor("document.querySelector('.start-button')");
- await b.evaluate("localStorage.clear();localStorage.setItem('trinity-preferences-v1',JSON.stringify({quality:'low',motion:'full',music:false,volume:0,liveDossiers:false}));");
+ await b.evaluate("localStorage.clear();localStorage.setItem('trinity-preferences-v1',JSON.stringify({quality:'low',motion:'full',cinematicQte:false,music:false,volume:0,liveDossiers:false}));");
  await b.reload();await b.waitFor("document.querySelector('.start-button')");await b.click('.start-button');
  await b.waitFor("document.querySelector('.character-select .three-arena')?.dataset.frameAsset==='loaded'",60000);await b.click('.fighter-confirm');
  await b.waitFor("document.querySelector('.game-surface .three-arena')?.dataset.frameAsset==='loaded'",60000);

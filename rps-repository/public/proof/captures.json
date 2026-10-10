@@ -1,7 +1,7 @@
 {
-  "sequences": 60,
-  "totalFrames": 240,
-  "method": "Real hand and attack controls; the development-only presentation clock stepped to four fixed beats.",
+  "sequences": 75,
+  "totalFrames": 330,
+  "method": "Real hand and attack controls; the development-only presentation clock stepped to four review beats, plus one midway world shot per finisher.",
   "captures": [
     {
       "id": "echo.rock.0",
@@ -25,6 +25,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "echo.png"
     },
     {
@@ -49,6 +50,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "echo.png"
     },
     {
@@ -73,11 +75,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "echo.png"
     },
     {
       "id": "echo.rock.final",
-      "title": "Bladebreaker",
+      "title": "Fault sever",
       "character": "echo",
       "frames": [
         {
@@ -90,13 +93,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.64
+          "progress": 0.79
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/echo.rock.final.webp"
+      },
       "sheet": "echo.png"
     },
     {
@@ -121,6 +128,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "echo.png"
     },
     {
@@ -145,6 +153,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "echo.png"
     },
     {
@@ -169,11 +178,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "echo.png"
     },
     {
       "id": "echo.paper.final",
-      "title": "Mirror blades",
+      "title": "Mirror execution",
       "character": "echo",
       "frames": [
         {
@@ -186,13 +196,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.66
+          "progress": 0.8
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/echo.paper.final.webp"
+      },
       "sheet": "echo.png"
     },
     {
@@ -217,6 +231,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "echo.png"
     },
     {
@@ -241,6 +256,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "echo.png"
     },
     {
@@ -265,6 +281,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "echo.png"
     },
     {
@@ -282,13 +299,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.68
+          "progress": 0.79
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/echo.scissors.final.webp"
+      },
       "sheet": "echo.png"
     },
     {
@@ -313,6 +334,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "cinder.png"
     },
     {
@@ -337,6 +359,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "cinder.png"
     },
     {
@@ -361,11 +384,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "cinder.png"
     },
     {
       "id": "cinder.rock.final",
-      "title": "Crater",
+      "title": "Orbit breaker",
       "character": "cinder",
       "frames": [
         {
@@ -378,13 +402,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.65
+          "progress": 0.84
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/cinder.rock.final.webp"
+      },
       "sheet": "cinder.png"
     },
     {
@@ -409,6 +437,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "cinder.png"
     },
     {
@@ -433,6 +462,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "cinder.png"
     },
     {
@@ -457,11 +487,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "cinder.png"
     },
     {
       "id": "cinder.paper.final",
-      "title": "Discharge",
+      "title": "Chain ignition",
       "character": "cinder",
       "frames": [
         {
@@ -474,13 +505,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.67
+          "progress": 0.8
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/cinder.paper.final.webp"
+      },
       "sheet": "cinder.png"
     },
     {
@@ -505,6 +540,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "cinder.png"
     },
     {
@@ -529,6 +565,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "cinder.png"
     },
     {
@@ -553,11 +590,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "cinder.png"
     },
     {
       "id": "cinder.scissors.final",
-      "title": "Furnace fall",
+      "title": "Crater maker",
       "character": "cinder",
       "frames": [
         {
@@ -570,13 +608,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.7
+          "progress": 0.81
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/cinder.scissors.final.webp"
+      },
       "sheet": "cinder.png"
     },
     {
@@ -601,6 +643,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "nyx.png"
     },
     {
@@ -625,6 +668,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "nyx.png"
     },
     {
@@ -649,11 +693,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "nyx.png"
     },
     {
       "id": "nyx.rock.final",
-      "title": "Shatter",
+      "title": "Prism prison",
       "character": "nyx",
       "frames": [
         {
@@ -666,13 +711,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.66
+          "progress": 0.8
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/nyx.rock.final.webp"
+      },
       "sheet": "nyx.png"
     },
     {
@@ -697,6 +746,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "nyx.png"
     },
     {
@@ -721,6 +771,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "nyx.png"
     },
     {
@@ -745,11 +796,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "nyx.png"
     },
     {
       "id": "nyx.paper.final",
-      "title": "Integral collapse",
+      "title": "Event horizon",
       "character": "nyx",
       "frames": [
         {
@@ -762,13 +814,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.69
+          "progress": 0.81
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/nyx.paper.final.webp"
+      },
       "sheet": "nyx.png"
     },
     {
@@ -793,6 +849,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "nyx.png"
     },
     {
@@ -817,6 +874,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "nyx.png"
     },
     {
@@ -841,11 +899,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "nyx.png"
     },
     {
       "id": "nyx.scissors.final",
-      "title": "Singularity",
+      "title": "Integral collapse",
       "character": "nyx",
       "frames": [
         {
@@ -858,13 +917,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.72
+          "progress": 0.81
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/nyx.scissors.final.webp"
+      },
       "sheet": "nyx.png"
     },
     {
@@ -889,6 +952,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "vex.png"
     },
     {
@@ -913,6 +977,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "vex.png"
     },
     {
@@ -937,6 +1002,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "vex.png"
     },
     {
@@ -954,13 +1020,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.68
+          "progress": 0.81
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/vex.rock.final.webp"
+      },
       "sheet": "vex.png"
     },
     {
@@ -985,6 +1055,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "vex.png"
     },
     {
@@ -1009,6 +1080,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "vex.png"
     },
     {
@@ -1033,11 +1105,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "vex.png"
     },
     {
       "id": "vex.paper.final",
-      "title": "Sky pin",
+      "title": "Astral pin",
       "character": "vex",
       "frames": [
         {
@@ -1050,13 +1123,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.7
+          "progress": 0.8
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/vex.paper.final.webp"
+      },
       "sheet": "vex.png"
     },
     {
@@ -1081,6 +1158,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "vex.png"
     },
     {
@@ -1105,6 +1183,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "vex.png"
     },
     {
@@ -1129,11 +1208,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "vex.png"
     },
     {
       "id": "vex.scissors.final",
-      "title": "Starfall",
+      "title": "Eclipse arrow",
       "character": "vex",
       "frames": [
         {
@@ -1146,13 +1226,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.73
+          "progress": 0.82
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/vex.scissors.final.webp"
+      },
       "sheet": "vex.png"
     },
     {
@@ -1177,6 +1261,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "kuro.png"
     },
     {
@@ -1201,6 +1286,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "kuro.png"
     },
     {
@@ -1225,11 +1311,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "kuro.png"
     },
     {
       "id": "kuro.rock.final",
-      "title": "Storm hammer",
+      "title": "Thunder burial",
       "character": "kuro",
       "frames": [
         {
@@ -1242,13 +1329,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.67
+          "progress": 0.79
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/kuro.rock.final.webp"
+      },
       "sheet": "kuro.png"
     },
     {
@@ -1273,6 +1364,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "kuro.png"
     },
     {
@@ -1297,6 +1389,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "kuro.png"
     },
     {
@@ -1321,11 +1414,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "kuro.png"
     },
     {
       "id": "kuro.paper.final",
-      "title": "Tempest",
+      "title": "Heaven’s gate",
       "character": "kuro",
       "frames": [
         {
@@ -1338,13 +1432,17 @@
         },
         {
           "label": "impact",
-          "progress": 0.71
+          "progress": 0.82
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/kuro.paper.final.webp"
+      },
       "sheet": "kuro.png"
     },
     {
@@ -1369,6 +1467,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "kuro.png"
     },
     {
@@ -1393,6 +1492,7 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "kuro.png"
     },
     {
@@ -1417,11 +1517,12 @@
           "progress": 0.88
         }
       ],
+      "showcase": null,
       "sheet": "kuro.png"
     },
     {
       "id": "kuro.scissors.final",
-      "title": "Heaven’s gate",
+      "title": "Iron cyclone",
       "character": "kuro",
       "frames": [
         {
@@ -1434,13 +1535,437 @@
         },
         {
           "label": "impact",
-          "progress": 0.75
+          "progress": 0.82
         },
         {
           "label": "recovery",
-          "progress": 0.88
+          "progress": 0.94
         }
       ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/kuro.scissors.final.webp"
+      },
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "echo.rock.final-alt",
+      "title": "Clockbreaker",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.81
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/echo.rock.final-alt.webp"
+      },
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.paper.final-alt",
+      "title": "Gravity guillotine",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.83
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/echo.paper.final-alt.webp"
+      },
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.scissors.final-alt",
+      "title": "Thread maze",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.81
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/echo.scissors.final-alt.webp"
+      },
+      "sheet": "echo.png"
+    },
+    {
+      "id": "cinder.rock.final-alt",
+      "title": "Rail cannon",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.85
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/cinder.rock.final-alt.webp"
+      },
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.paper.final-alt",
+      "title": "Sun in your hands",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.83
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/cinder.paper.final-alt.webp"
+      },
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.scissors.final-alt",
+      "title": "Magnetic collapse",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.82
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/cinder.scissors.final-alt.webp"
+      },
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "nyx.rock.final-alt",
+      "title": "Crystal cathedral",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.83
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/nyx.rock.final-alt.webp"
+      },
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.paper.final-alt",
+      "title": "Paper universe",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.84
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/nyx.paper.final-alt.webp"
+      },
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.scissors.final-alt",
+      "title": "Gravity engine",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.86
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/nyx.scissors.final-alt.webp"
+      },
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "vex.rock.final-alt",
+      "title": "Tidal arrow",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.82
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/vex.rock.final-alt.webp"
+      },
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.paper.final-alt",
+      "title": "Astral tether",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.85
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/vex.paper.final-alt.webp"
+      },
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.scissors.final-alt",
+      "title": "Star lance",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.85
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/vex.scissors.final-alt.webp"
+      },
+      "sheet": "vex.png"
+    },
+    {
+      "id": "kuro.rock.final-alt",
+      "title": "Chrono blade",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.81
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/kuro.rock.final-alt.webp"
+      },
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.paper.final-alt",
+      "title": "Serpent coil",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.83
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/kuro.paper.final-alt.webp"
+      },
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.scissors.final-alt",
+      "title": "Aurora plunge",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.84
+        },
+        {
+          "label": "recovery",
+          "progress": 0.94
+        }
+      ],
+      "showcase": {
+        "progress": 0.55,
+        "image": "cinematics/kuro.scissors.final-alt.webp"
+      },
       "sheet": "kuro.png"
     }
   ]

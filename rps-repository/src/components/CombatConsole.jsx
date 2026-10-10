@@ -79,7 +79,7 @@ export default function CombatConsole({
           {earned
             ? `${weaponFor(hand).type} won. ${bag ? "Use an item" : "Choose an attack"}`
             : busy
-              ? "Wait for it…"
+              ? "Attack in progress"
               : run.result?.item
                 ? "Item used. Choose a hand."
                 : run.result?.outcome === "loss"
@@ -95,6 +95,9 @@ export default function CombatConsole({
           <small>{run.scanned ? "Certain" : `${Math.min(100,run.enemy.confidence+(perks.tellBoost||0))}%`}</small>
         </div>
       </div>
+      {run.enemy.district.reverse && !busy && <div className="cycle-warning" role="note">
+        <b>Prism rules</b><span>Rock beats paper · Paper beats scissors · Scissors beats rock</span>
+      </div>}
       {earned ? (
         <div className="earned-actions">
           {bag ? (
@@ -231,6 +234,7 @@ export default function CombatConsole({
                 key={s.id}
                 aria-pressed={stance === s.id}
                 className={stance === s.id ? "active" : ""}
+                disabled={disabled || !!pending}
                 onClick={() => setStance(s.id)}
               >
                 <b>{s.id === "strike" ? "Normal defence" : "Brace"}</b>
@@ -245,7 +249,7 @@ export default function CombatConsole({
           <div className="utility-row">
             <button
               disabled={
-                disabled || run.charge < scanCost || run.scanned || run.scanUsed
+                disabled || !!pending || run.charge < scanCost || run.scanned || run.scanUsed
               }
               onClick={() => {
                 setRun((r) => scanSignal(r));
@@ -256,7 +260,7 @@ export default function CombatConsole({
               {run.scanUsed ? "Scan used" : "Read hand"}
               <small>{scanCost} charge · once per floor</small>
             </button>
-            <button onClick={onGuide}>Rules</button>
+            <button disabled={disabled || !!pending} onClick={onGuide}>Rules</button>
           </div>
           {run.enemy.ability && (
             <p className="apex-warning">
