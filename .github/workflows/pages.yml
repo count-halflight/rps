@@ -18,20 +18,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: rps-repository/package-lock.json
       - run: npm ci
         working-directory: rps-repository
-      - run: npm test
-        working-directory: rps-repository
       - run: npm run build:static
         working-directory: rps-repository
         env:
           VITE_BASE_PATH: /rps/
+      - run: npm test
+        working-directory: rps-repository
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
