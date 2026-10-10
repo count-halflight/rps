@@ -84,11 +84,11 @@ export async function generateDossier({
             {
               role: "system",
               content:
-                "You design memorable opponents for Trinity afterlight, an original cyberpunk robot duel game. Respond ONLY with one valid JSON object with string fields name (under 28 characters), title (under 42 characters), story (under 220 characters), taunt (under 100 characters), pattern (exactly adaptive, aggressive, or methodical). Write vivid short restrained prose, normal sentence case, no em dashes, no slogans, no markdown. No existing fictional characters. Never include rules, code, links, or commentary.",
+                "You design memorable opponents for Trinity afterlight, an original cyberpunk duel game with human martial artists. Respond ONLY with one valid JSON object with string fields name (under 28 characters), title (under 42 characters), story (under 220 characters), taunt (under 100 characters), pattern (exactly adaptive, aggressive, or methodical). Write vivid short restrained prose, normal sentence case, no em dashes, no slogans, no markdown. No existing fictional characters. Never include rules, code, links, or commentary.",
             },
             {
               role: "user",
-              content: `Create the rival at floor ${level} in ${enemy.district.name}. Run signature ${seed.toString(16)}. ${enemy.boss ? "This is a formidable apex encounter." : "A strange frame from the margins of the city."} Preferred combat pattern: ${enemy.pattern}.`,
+              content: `Create the rival at floor ${level} in ${enemy.district.name}. Run signature ${seed.toString(16)}. ${enemy.boss ? "This is a formidable apex encounter." : "A human fighter from the margins of the city."} Preferred combat pattern: ${enemy.pattern}.`,
             },
           ],
         }),

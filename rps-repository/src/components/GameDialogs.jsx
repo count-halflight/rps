@@ -1,23 +1,7 @@
 import React from "react";
-import {
-  Activity,
-  ArrowDownRight,
-  ArrowRight,
-  BookOpen,
-  Check,
-  ChevronRight,
-  Coins,
-  Cpu,
-  Flame,
-  Layers3,
-  Play,
-  RotateCcw,
-  Target,
-  Trophy,
-  Zap,
-} from "lucide-react";
-import { Modal, IconFor, pad } from "./ui";
-import { WEAPONS, UPGRADES, upgradeChoices } from "../game/engine";
+import { ArrowRight, RotateCcw } from "lucide-react";
+import { Modal, IconFor } from "./ui";
+import { WEAPONS, UPGRADES, upgradeChoices, floorSupply } from "../game/engine";
 import { FRAME_FINISHES, finishUnlocked } from "../game/preferences";
 import WeaponIcon from "./WeaponIcon";
 import { dailyDate, dailySeed, dailyLabel } from "../game/daily";
@@ -27,338 +11,221 @@ export default function GameDialogs({
   run,
   record,
   dossier,
-  ai,
   busy,
   advance,
   restart,
   preferences,
   setPreferences,
   onTraining,
+  onFullscreen,
+  isFullscreen,
   training,
 }) {
-  const district = run.enemy.district;
-  const today = dailyDate();
+  const today = dailyDate(),
+    supply = floorSupply(run),
+    supplyFull = (run.inventory?.[supply.id] || 0) >= 5;
   return (
     <>
-      {" "}
-      {modal === "dossier" && (
+      {modal === "pause" && (
         <Modal
-          title={dossier.name}
-          eyebrow="Intercepted transmission"
+          title="Paused"
+          eyebrow={`Floor ${run.level} · ${run.credits} credits`}
           onClose={() => setModal(null)}
-          className="dossier-modal"
+          className="small-modal"
         >
-          <div className="dossier-profile">
-            <span>
-              <Target size={38} />
-            </span>
-            <div>
-              <h3>{dossier.title}</h3>
-              <p>
-                {run.enemy.serial} · {run.enemy.pattern} protocol
-              </p>
-            </div>
-            <span className="dossier-source">
-              {ai ? "Live signal" : "Recovered signal"}
-            </span>
+          <div className="menu-options">
+            <button onClick={() => setModal(null)}>
+              Resume<span>Esc</span>
+            </button>
+            <button onClick={() => onFullscreen()}>
+              {isFullscreen ? "Leave fullscreen" : "Fullscreen"}
+              <span>F</span>
+            </button>
+            <button onClick={() => setModal("settings")}>Settings</button>
+            <button onClick={() => setModal("guide")}>How to fight</button>
+            <button onClick={() => setModal("archive")}>Your record</button>
+            <button onClick={() => setModal("dossier")}>Rival</button>
+            <button onClick={onTraining} disabled={busy}>
+              Training<span>Optional</span>
+            </button>
+            <button onClick={() => setModal("restart")} disabled={training}>
+              New run
+            </button>
           </div>
-          <blockquote>“{dossier.taunt}”</blockquote>
-          <p className="modal-intro">{dossier.story}</p>
-          <div className="dossier-attributes">
-            <div>
-              <span>District</span>
-              <b>{district.name}</b>
-            </div>
-            <div>
-              <span>Threat class</span>
-              <b>{run.enemy.boss ? "Apex" : "Combat frame"}</b>
-            </div>
-            <div>
-              <span>Protocol</span>
-              <b>{run.enemy.pattern}</b>
-            </div>
+          <div className="menu-record">
+            <span>Best floor {record.level}</span>
+            <span>{record.combo} hit best streak</span>
           </div>
-          <div className="protocol-intel">
-            <Activity size={20} />
-            <p>
-              {run.enemy.ability?.id === "mirror"
-                ? "This frame rewrites its next signal to counter your previous weapon. Read the new forecast instead of repeating your last choice."
-                : run.enemy.pattern === "adaptive"
-                  ? "This frame learns your last weapon and often prepares its counter. Watch how its signal changes after each exchange."
-                  : run.enemy.pattern === "methodical"
-                    ? "This frame cycles its forecast in a fixed order. The forecast is unusually reliable outside static zones."
-                    : "This frame favors a signature weapon. Its aggression is predictable, but occasional deviations can catch you."}
-            </p>
-          </div>
-          {run.enemy.ability && (
-            <div className="apex-intel">
-              <Target size={22} />
-              <div>
-                <h3>{run.enemy.ability.name}</h3>
-                <p>{run.enemy.ability.detail}</p>
-              </div>
-            </div>
-          )}
-          <button className="primary-button" onClick={() => setModal(null)}>
-            Return to the arena <ArrowRight size={17} />
-          </button>
         </Modal>
       )}
       {modal === "guide" && (
         <Modal
-          title="Three instincts. One counter."
-          eyebrow="The field guide"
+          title="Win the opening"
+          eyebrow="Rock · paper · scissors"
           onClose={() => setModal(null)}
-          className="guide-modal"
         >
           <p className="modal-intro">
-            A duel of prediction, not reflexes. Choose your weapon, set a
-            protocol, then commit. The hostile frame chooses at the same time.
+            Tap a hand. If you win, choose one of your fighter’s attacks or use
+            an item. If you lose, the rival attacks. A draw starts the next
+            hand. The rival’s tell can be wrong.
           </p>
-          <button
-            className="secondary-button guide-training-button"
-            onClick={onTraining}
-            disabled={busy}
-          >
-            <Target size={17} />{" "}
-            {training
-              ? "Restart training"
-              : "Play the optional training circuit"}{" "}
-            <ArrowRight size={17} />
-          </button>
           <div className="cycle-guide">
             {WEAPONS.map((w) => (
               <div key={w.id}>
-                <WeaponIcon type={w.id} size={58} />
-                <h3>{w.name}</h3>
-                <span>{w.type}</span>
+                <WeaponIcon type={w.id} size={48} />
+                <h3>{w.type}</h3>
                 <p>{w.description}</p>
-                <ChevronRight size={17} />
               </div>
             ))}
           </div>
-          <div className="guide-sections">
-            <div>
-              <Activity size={21} />
-              <h3>Read between the signals</h3>
-              <p>
-                Passive scans show the probability of the next enemy weapon.
-                Deep scan reveals the exact next attack. Methodical forecasts
-                follow a cycle. Static districts distort passive scans.
-              </p>
-            </div>
-            <div>
-              <Zap size={21} />
-              <h3>Build your advantage</h3>
-              <p>
-                Strike earns 14 charge. Guard earns 22 and halves incoming
-                damage. Spend 40 on overdrive for double damage. At 75 heat,
-                damage drops and overdrive locks.
-              </p>
-            </div>
-            <div>
-              <Cpu size={21} />
-              <h3>Become something else</h3>
-              <p>
-                Clear a floor to choose an augment and recover integrity. Every
-                fifth floor is an apex encounter. Districts change the rules,
-                including reversing the counter cycle. Each apex carries its own
-                ability. Read its dossier before committing.
-              </p>
-            </div>
-            <div>
-              <Trophy size={21} />
-              <h3>Make the descent yours</h3>
-              <p>
-                Chain counters for bonus damage. Earn credits and set a personal
-                best. Spend 30 charge on a deep scan once per floor to reveal
-                the next attack, or 80 credits on a field repair once per floor.
-                Runs have no final floor. Your current run and records save
-                automatically on this device.
-              </p>
-            </div>
-          </div>
-          <button className="primary-button" onClick={() => setModal(null)}>
-            I’m ready <ArrowRight size={17} />
+          <ol className="rule-list">
+            <li>
+              Quick attacks build 14 charge. Safe attacks deal less damage and
+              build 22 charge.
+            </li>
+            <li>
+              Heavy attacks cost 40 charge for double damage. They lock at 75
+              heat.
+            </li>
+            <li>
+              Items spend your winning action. Medkits heal, coolant clears
+              heat, batteries restore charge.
+            </li>
+            <li>
+              Read hand costs 30 charge and works once per floor. Brace halves
+              incoming damage when you lose.
+            </li>
+            <li>
+              Win a fight to upgrade your fighter and receive an item. Every
+              fifth floor has a boss. The prism vault reverses the cycle.
+            </li>
+          </ol>
+          <button
+            className="primary-button"
+            onClick={onTraining}
+            disabled={busy}
+          >
+            Play the tutorial <ArrowRight size={18} />
           </button>
           <p className="modal-keyboard">
-            1 / 2 / 3 select a weapon · Space commits · Escape pauses
+            1 / 2 / 3 choose a hand · Space reveals · 1 / 2 / 3 choose an attack
+            · Esc pauses
           </p>
+        </Modal>
+      )}
+      {modal === "dossier" && (
+        <Modal
+          title={dossier.name}
+          eyebrow={dossier.title}
+          onClose={() => setModal(null)}
+        >
+          <blockquote>{dossier.taunt}</blockquote>
+          <p className="modal-intro">{dossier.story}</p>
+          <div className="daily-circuit">
+            <h3>{run.enemy.ability?.name || run.enemy.pattern}</h3>
+            <p>
+              {run.enemy.ability?.detail ||
+                "Watch how the tell changes after each hand. A repeated choice can become predictable."}
+            </p>
+            <small>{run.enemy.district.detail}</small>
+          </div>
         </Modal>
       )}
       {modal === "archive" && (
         <Modal
-          title="A record of your descent."
-          eyebrow="Your archive"
+          title="Your record"
+          eyebrow="Saved on this device"
           onClose={() => setModal(null)}
         >
           <div className="archive-records">
             <div>
-              <Trophy size={22} />
-              <b>{pad(record.level)}</b>
-              <span>Deepest floor</span>
+              <b>{record.level}</b>
+              <span>Best floor</span>
             </div>
             <div>
-              <Coins size={22} />
+              <b>{record.combo}</b>
+              <span>Best hit streak</span>
+            </div>
+            <div>
               <b>{record.credits}</b>
-              <span>Best run credits</span>
-            </div>
-            <div>
-              <Flame size={22} />
-              <b>{record.combo}x</b>
-              <span>Longest chain</span>
+              <span>Best credits</span>
             </div>
           </div>
           <div className="daily-circuit">
-            <span className="daily-symbol">
-              <Target size={25} />
-            </span>
-            <div>
-              <h3>
-                The daily circuit <span>{dailyLabel(today)}</span>
-              </h3>
-              <p>Same hostile frames. Same salvage. Your own decisions.</p>
-              <small>
-                {record.dailyDate === today
-                  ? `Your best today: floor ${pad(record.dailyLevel)}`
-                  : "A fresh circuit every day, shared by every pilot."}
-              </small>
-            </div>
+            <h3>Daily run</h3>
+            <p>{dailyLabel(today)} · Everyone gets the same rivals.</p>
+            <small>
+              {record.dailyDate === today
+                ? `Your best today: floor ${record.dailyLevel}`
+                : "A new seed each day."}
+            </small>
             <button
               className="secondary-button"
-              disabled={busy || training}
               onClick={() => setModal("daily")}
+              disabled={training || busy}
             >
-              Enter <ArrowRight size={15} />
+              Enter daily run <ArrowRight size={17} />
             </button>
           </div>
-          <div className="finishes-title">
-            <h3>Frame signatures</h3>
-            <span>Earned in the circuit</span>
-          </div>
-
+          <h3 style={{ marginTop: 24, fontSize: 26 }}>Weapon colours</h3>
           <div className="frame-finishes">
-            {FRAME_FINISHES.map((f) => {
-              const unlocked = finishUnlocked(f, record.level);
-              return (
-                <button
-                  key={f.id}
-                  disabled={!unlocked}
-                  aria-pressed={preferences.skin === f.id}
-                  title={unlocked ? f.name : `Clear floor ${f.floor} to unlock`}
-                  className={preferences.skin === f.id ? "selected" : ""}
-                  onClick={() => setPreferences((p) => ({ ...p, skin: f.id }))}
-                >
-                  <span
-                    className="finish-color"
-                    style={{ "--finish-color": f.color }}
-                  />
-                  <b>{f.name}</b>
-                  <small>
-                    {unlocked
-                      ? preferences.skin === f.id
-                        ? "Equipped"
-                        : "Unlocked"
-                      : `Floor ${String(f.floor).padStart(2, "0")}`}
-                  </small>
-                </button>
-              );
-            })}
+            {FRAME_FINISHES.map((f) => (
+              <button
+                key={f.id}
+                disabled={!finishUnlocked(f, record.level)}
+                aria-pressed={preferences.skin === f.id}
+                className={preferences.skin === f.id ? "selected" : ""}
+                onClick={() => setPreferences((p) => ({ ...p, skin: f.id }))}
+              >
+                <span
+                  className="finish-color"
+                  style={{ "--finish-color": f.color }}
+                />
+                <b>{f.name}</b>
+                <small>
+                  {finishUnlocked(f, record.level)
+                    ? preferences.skin === f.id
+                      ? "Equipped"
+                      : "Unlocked"
+                    : `Clear floor ${f.floor}`}
+                </small>
+              </button>
+            ))}
           </div>
-          <h3 className="archive-section-title">Current frame / Echo 01</h3>
+          <h3 style={{ fontSize: 26 }}>Upgrades</h3>
           <div className="augment-list">
             {UPGRADES.map((u) => (
               <div key={u.id}>
-                <span>
-                  <IconFor id={u.icon} />
-                </span>
+                <IconFor id={u.icon} />
                 <div>
                   <b>{u.name}</b>
                   <small>{u.detail}</small>
                 </div>
-                <strong className={run.upgrades[u.id] ? "equipped" : ""}>
-                  {run.upgrades[u.id] ? `×${run.upgrades[u.id]}` : "Offline"}
-                </strong>
+                <strong>×{run.upgrades[u.id]}</strong>
               </div>
             ))}
           </div>
-          <div className="archive-bottom">
-            <span>Run signature {run.seed.toString(16).toUpperCase()}</span>
-            <button
-              className="text-button danger-text"
-              disabled={busy || training}
-              onClick={() => setModal("restart")}
-            >
-              Start a new run <RotateCcw size={15} />
-            </button>
-          </div>
         </Modal>
       )}
-      {modal === "pause" && (
+      {(modal === "restart" || modal === "daily") && (
         <Modal
-          title="Take a breath."
-          eyebrow="Neural link suspended"
-          onClose={() => setModal(null)}
-          className="small-modal"
-        >
-          <p className="modal-intro">The city can wait. Your run is saved.</p>
-          <button className="primary-button" onClick={() => setModal(null)}>
-            <Play size={17} />
-            Resume the descent
-          </button>
-          <button
-            className="secondary-button"
-            onClick={() => setModal("guide")}
-          >
-            Open field guide <BookOpen size={17} />
-          </button>
-          <button
-            className="text-button danger-text"
-            onClick={() => setModal("restart")}
-          >
-            Start a new run <RotateCcw size={15} />
-          </button>
-        </Modal>
-      )}
-      {modal === "restart" && (
-        <Modal
-          title="A new descent?"
-          eyebrow="Reset current run"
-          onClose={() => setModal("archive")}
+          title={modal === "daily" ? "Daily run" : "Start fresh?"}
+          eyebrow={modal === "daily" ? dailyLabel(today) : "Your records stay"}
+          onClose={() => setModal("pause")}
           className="small-modal"
         >
           <p className="modal-intro">
-            Your current floor, credits, and augments will reset. Your personal
-            records stay.
+            This replaces the current run. Your personal best and unlocked
+            signatures stay saved.
           </p>
-          <button className="primary-button" onClick={() => restart()}>
-            Start fresh <ArrowRight size={17} />
-          </button>
-          <button className="secondary-button" onClick={() => setModal(null)}>
-            Keep this run
-          </button>
-        </Modal>
-      )}
-      {modal === "daily" && (
-        <Modal
-          title="Today’s descent."
-          eyebrow={`Daily circuit / ${dailyLabel(today)}`}
-          onClose={() => setModal("archive")}
-          className="small-modal"
-        >
-          <p className="modal-intro">
-            Every pilot gets the same encounters and augments today. Your
-            current run will reset. Your records and frame signatures stay.
-          </p>
-          <div className="daily-signature">
-            <span>Circuit signature</span>
-            <b>{dailySeed(today).toString(16).toUpperCase()}</b>
-          </div>
           <button
             className="primary-button"
-            onClick={() => restart(dailySeed(today), today)}
+            onClick={() =>
+              modal === "daily" ? restart(dailySeed(today), today) : restart()
+            }
           >
-            Enter the daily circuit <ArrowRight size={17} />
+            Start {modal === "daily" ? "daily run" : "new run"}{" "}
+            <ArrowRight size={17} />
           </button>
           <button className="secondary-button" onClick={() => setModal(null)}>
             Keep this run
@@ -367,79 +234,64 @@ export default function GameDialogs({
       )}
       {!modal && !busy && run.phase === "upgrade" && (
         <Modal
-          title="Leave stronger."
-          eyebrow={`Floor ${pad(run.level)} cleared`}
+          title="Victory"
+          eyebrow={`Floor ${run.level} cleared`}
           className="upgrade-modal"
         >
           <div className="victory-summary">
-            <span>
-              <Check size={17} />
-              Hostile frame neutralized
-            </span>
-            <span>
-              <Coins size={17} />+{run.result?.bounty || 0} credits
-            </span>
+            +{run.result?.bounty || 0} credits · Choose your next upgrade
           </div>
           <p className="modal-intro">
-            Salvage one augment. Recover 20 integrity, or 35 with a Second
-            heart.
+            Recover up to 20 health, or 35 with More health.
           </p>
           <div className="upgrade-grid">
             {upgradeChoices(run).map((u) => (
               <button key={u.id} onClick={() => advance(u.id)}>
                 <span className="upgrade-icon">
-                  <IconFor id={u.icon} size={29} />
+                  <IconFor id={u.icon} size={30} />
                 </span>
-                <span className="eyebrow">{u.kind}</span>
                 <h3>{u.name}</h3>
                 <p>{u.detail}</p>
                 <span className="install-label">
-                  Install & descend <ArrowRight size={17} />
+                  Take & continue <ArrowRight size={16} />
                 </span>
               </button>
             ))}
           </div>
           <div className="next-floor-label">
-            <ArrowDownRight size={17} />
-            Next floor {pad(run.level + 1)} · New hostile frame · New district
+            {supplyFull ? `${supply.name} stock full` : `+1 ${supply.name.toLowerCase()}`} · Next: floor{" "}
+            {run.level + 1} · New rival
           </div>
         </Modal>
       )}
       {!modal && !busy && run.phase === "defeat" && (
         <Modal
-          title="The signal goes quiet."
-          eyebrow="Frame integrity lost"
-          className="defeat-modal"
+          title="You fell"
+          eyebrow={`Floor ${run.level}`}
+          className="small-modal"
         >
-          <p className="modal-intro">
-            Every descent teaches you something. The city has another story
-            waiting.
-          </p>
           <div className="archive-records">
             <div>
-              <ArrowDownRight size={22} />
-              <b>{pad(run.level)}</b>
-              <span>Floor reached</span>
+              <b>{run.level}</b>
+              <span>Floor</span>
             </div>
             <div>
-              <Coins size={22} />
+              <b>{run.bestCombo}</b>
+              <span>Hit streak</span>
+            </div>
+            <div>
               <b>{run.credits}</b>
-              <span>Credits earned</span>
-            </div>
-            <div>
-              <Flame size={22} />
-              <b>{run.bestCombo}x</b>
-              <span>Best chain</span>
+              <span>Credits</span>
             </div>
           </div>
           <button className="primary-button" onClick={() => restart()}>
-            Return to the circuit <RotateCcw size={17} />
+            Fight again <RotateCcw size={18} />
           </button>
           <button
             className="secondary-button"
             onClick={() => setModal("archive")}
           >
-            View your archive <Layers3 size={17} />
+            Your record
           </button>
         </Modal>
       )}

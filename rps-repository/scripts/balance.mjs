@@ -5,7 +5,8 @@ import {
   upgradeChoices,
   counterFor,
   scanSignal,
-  repairFrame,
+  openingFor,
+  useEarnedItem,
   random,
 } from "../src/game/engine.js";
 import fs from "node:fs/promises";
@@ -48,8 +49,6 @@ function simulate(seed, strategy) {
       continue;
     }
     if (strategy === "tactical") {
-      if (run.credits >= 80 && run.hp < run.maxHp * 0.7 && !run.repairUsed)
-        run = repairFrame(run);
       if (
         run.charge >= 30 &&
         !run.scanUsed &&
@@ -64,9 +63,26 @@ function simulate(seed, strategy) {
             run.scanned || ["rock", "paper", "scissors"][run.enemy.signal],
             run.enemy.district.reverse,
           ).id;
+    const opening = openingFor(run, weapon);
+    if (strategy === "tactical" && opening.outcome === "win") {
+      const item =
+        run.hp < run.maxHp * 0.5 && run.inventory.medkit
+          ? "medkit"
+          : run.heat > 65 && run.inventory.coolant
+            ? "coolant"
+            : null;
+      if (item) {
+        run = useEarnedItem(run, weapon, item);
+        exchanges++;
+        continue;
+      }
+    }
     const stance =
       strategy === "tactical"
-        ? run.charge >= 70 && run.heat < 50 && run.enemy.hp > 25
+        ? opening.outcome === "win" &&
+          run.charge >= 70 &&
+          run.heat < 50 &&
+          run.enemy.hp > 25
           ? "overdrive"
           : run.hp < run.maxHp * 0.5 || run.enemy.confidence < 65
             ? "guard"

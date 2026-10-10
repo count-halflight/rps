@@ -9,16 +9,12 @@ const publicFiles = [
   "/manifest.webmanifest",
   "/icons/trinity-192.png",
   "/icons/trinity-512.png",
-  "/models/echo-frame.glb",
-  "/models/echo-frame-low.glb",
-  ...[
-    "afterlight-arena",
-    "ember-foundry",
-    "prism-vault",
-    "ghost-market",
-    "signal-garden",
-    "black-tide",
-  ].map((name) => `/assets/${name}.webp`),
+  "/art/afterlight-cover.png",
+  "/models/echo-human.glb",
+  "/models/ronin-human.glb",
+  "/models/brawler-human.glb",
+  "/models/nyx-human.glb",
+  "/models/vex-human.glb",
 ];
 export default function offlinePlugin() {
   let outputDir, base;

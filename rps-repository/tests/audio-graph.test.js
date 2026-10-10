@@ -56,14 +56,14 @@ test("battle audio schedules a music cut before the final impact and cleans up i
   try {
     audio.playTone("select", true);
     audio.setAmbience(true);
-    audio.setBattleAudio(0.1, 0.1, { id: "test-finish", duration: 3900 });
+    audio.setBattleAudio(0.1, 0.1, { id: "test-finish", duration: 5400, impactAt: 0.64 });
     const silence = events.filter(
       (e) => e.value === 0.0001 && ["set", "ramp"].includes(e.method),
     );
     assert.ok(
-      silence.some((e) => Math.abs(e.time - (3.9 * 0.43 - 0.22)) < 1e-9),
+      silence.some((e) => Math.abs(e.time - (5.4 * 0.64 - 0.22)) < 1e-9),
     );
-    assert.ok(silence.some((e) => Math.abs(e.time - 3.9 * 0.43) < 1e-9));
+    assert.ok(silence.some((e) => Math.abs(e.time - 5.4 * 0.64) < 1e-9));
     assert.ok(events.some((e) => e.method === "target" && e.value < 300));
   } finally {
     audio.setAmbience(false);

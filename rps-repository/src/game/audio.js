@@ -1,6 +1,7 @@
 import { battleSoundProfile } from "./audioProfile.js";
 let context,
   master,
+  analyser,
   ambient,
   musicTimer,
   heartbeatTimer,
@@ -19,16 +20,92 @@ function audioContext() {
     master = context.createGain();
     master.gain.value = audioEnabled ? volume : 0;
     master.connect(context.destination);
+    if (context.createAnalyser) {
+      analyser = context.createAnalyser();
+      analyser.fftSize = 1024;
+      master.connect(analyser);
+    }
   }
   context.resume().catch(() => {});
   if (ambientRequested && !ambient) setAmbience(true, ambientFloor);
   return context;
 }
+export function unlockAudio() {
+  try {
+    return audioContext().resume();
+  } catch {
+    return Promise.resolve();
+  }
+}
+export function audioSnapshot() {
+  let rms = 0;
+  if (analyser) {
+    const samples = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(samples);
+    rms = Math.sqrt(
+      samples.reduce((sum, n) => sum + n * n, 0) / samples.length,
+    );
+  }
+  return {
+    state: context?.state || "uninitialized",
+    enabled: audioEnabled,
+    playing: Boolean(ambient),
+    rms,
+    ...battleMix,
+  };
+}
+function noise(time, duration, amplitude, frequency, destination = master) {
+  if (!context.createBuffer) return;
+  const buffer = context.createBuffer(
+      1,
+      Math.ceil(context.sampleRate * duration),
+      context.sampleRate,
+    ),
+    data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++)
+    data[i] = (Math.random() * 2 - 1) * Math.exp((-i / data.length) * 5);
+  const source = context.createBufferSource(),
+    gain = context.createGain(),
+    filter = context.createBiquadFilter();
+  source.buffer = buffer;
+  filter.type = "highpass";
+  filter.frequency.value = frequency;
+  gain.gain.value = amplitude;
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(destination);
+  source.start(time);
+  source.onended = () => {
+    source.disconnect();
+    filter.disconnect();
+    gain.disconnect();
+  };
+}
+function kick(time, destination, amplitude = 0.25) {
+  const osc = context.createOscillator(),
+    g = context.createGain();
+  osc.frequency.setValueAtTime(130, time);
+  osc.frequency.exponentialRampToValueAtTime(42, time + 0.13);
+  g.gain.setValueAtTime(amplitude, time);
+  g.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
+  osc.connect(g);
+  g.connect(destination);
+  osc.start(time);
+  osc.stop(time + 0.23);
+  osc.onended = () => {
+    osc.disconnect();
+    g.disconnect();
+  };
+}
 export function configureAudio(percent, enabled = true) {
   volume = Math.max(0, Math.min(1, percent / 100));
   audioEnabled = enabled;
   if (context && master)
-    master.gain.setTargetAtTime(audioEnabled ? volume : 0, context.currentTime, 0.02);
+    master.gain.setTargetAtTime(
+      audioEnabled ? volume : 0,
+      context.currentTime,
+      0.02,
+    );
 }
 export function setBattleAudio(
   enemyIntegrity,
@@ -42,7 +119,8 @@ export function setBattleAudio(
   if (!ambient) return;
   if (finalAttempt && lastAnticipationId !== finalAttempt.id) {
     lastAnticipationId = finalAttempt.id;
-    const impact = now + (finalAttempt.duration / 1000) * 0.43;
+    const impact =
+      now + (finalAttempt.duration / 1000) * (finalAttempt.impactAt ?? 0.64);
     anticipation = { start: now, impact, quiet: Math.max(now, impact - 0.22) };
     ambient.gain.cancelScheduledValues(now);
     ambient.gain.setValueAtTime(battleMix.musicGain, now);
@@ -95,6 +173,23 @@ export function playTone(type, enabled, delay = 0) {
     if (type === "select") {
       note(780, now, 0.045, 0.025, "triangle");
       note(390, now + 0.02, 0.055, 0.012);
+      return;
+    }
+    if (type === "rock") {
+      note(74, now, 0.35, 0.18, "triangle");
+      noise(now, 0.24, 0.12, 600);
+      return;
+    }
+    if (type === "paper") {
+      [196, 294, 392, 588].forEach((f, i) =>
+        note(f, now + i * 0.09, 0.55, 0.035, "sine"),
+      );
+      return;
+    }
+    if (type === "scissors") {
+      noise(now, 0.18, 0.13, 1700);
+      noise(now + 0.22, 0.16, 0.09, 2500);
+      note(1100, now, 0.13, 0.026, "triangle");
       return;
     }
     if (type === "engage") {
@@ -173,6 +268,8 @@ export function setAmbience(enabled, level = 1) {
     musicNodes.push(osc, gain);
   });
   let step = 0;
+  const bass = [0, 0, 7, 0, 3, 3, 10, 7, 0, 0, 7, 12, 5, 5, 7, 3];
+  const lead = [12, 19, 15, 22, 19, 15, 10, 7, 12, 15, 19, 24, 22, 19, 15, 10];
   const pulse = () => {
     if (!ambient || !ambientRequested) return;
     const now = context.currentTime;
@@ -188,26 +285,51 @@ export function setAmbience(enabled, level = 1) {
       : 0;
     const quiet =
       anticipation && now >= anticipation.quiet && now < anticipation.impact;
-    const intensity = Math.min(1.4, battleMix.intensity + build * 0.45);
-    const bpm = battleMix.bpm + build * 40;
+    const intensity = Math.min(1.4, battleMix.intensity + build * 0.6),
+      bpm = 108 + battleMix.intensity * 34 + build * 48;
+    const tick = 60 / bpm / 2;
     if (context.state === "running" && !quiet) {
-      const pattern = [0, 7, 12, 7, 0, 7, 15, 12];
-      const pitch = base * 4 * Math.pow(2, pattern[step % 8] / 12);
-      note(
-        pitch,
-        now,
-        0.22,
-        0.018 + intensity * 0.02,
-        intensity > 0.7 ? "triangle" : "sine",
-        filter,
-      );
-      if (step % 4 === 0)
-        note(base, now, 0.17, 0.03 + intensity * 0.04, "triangle", filter);
-      if (intensity > 0.65 && step % 2 === 1)
-        note(pitch * 2, now + 60 / bpm / 4, 0.11, 0.014, "sine", filter);
+      // An original sixteen-bar arrangement: drums, bass, chords and a lead.
+      if (step % 2 === 0 || (intensity > 0.65 && step % 8 === 7))
+        kick(now, filter, 0.28 + intensity * 0.08);
+      if (step % 8 === 2 || step % 8 === 6) {
+        noise(now, 0.18, 0.18, 1000, filter);
+        note(185, now, 0.08, 0.035, "triangle", filter);
+      }
+      noise(now, 0.045, step % 2 ? 0.035 : 0.025, 5500, filter);
+      if (intensity > 0.45) noise(now + tick / 2, 0.026, 0.025, 6200, filter);
+      const frequency = base * Math.pow(2, bass[step % 16] / 12);
+      note(frequency, now, 0.22, 0.105, "sawtooth", filter);
+      note(frequency / 2, now, 0.24, 0.06, "sine", filter);
+      if (step % 16 === 0) {
+        const chord = [0, 3, 7, 10];
+        chord.forEach((n, i) =>
+          note(
+            base * 2 * Math.pow(2, n / 12),
+            now + i * 0.018,
+            tick * 13,
+            0.018,
+            "triangle",
+            filter,
+          ),
+        );
+      }
+      if (step % 2 === 0 || intensity > 0.4) {
+        const n =
+          lead[(Math.floor(step / 2) + Math.floor((level - 1) / 6) * 3) % 16];
+        note(
+          base * 4 * Math.pow(2, n / 12),
+          now,
+          0.2,
+          0.025 + intensity * 0.025,
+          "triangle",
+          filter,
+        );
+      }
+      if (build > 0.2) noise(now, 0.04, 0.035 + build * 0.07, 2200, filter);
       step++;
     }
-    musicTimer = setTimeout(pulse, 60000 / bpm / 2);
+    musicTimer = setTimeout(pulse, tick * 1000);
   };
   const heartbeat = () => {
     if (!ambient || !ambientRequested) return;

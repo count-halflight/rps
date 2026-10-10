@@ -32,11 +32,11 @@ test("six apex abilities introduce distinct combat decisions", () => {
   const siphon = apex("siphon");
   siphon.enemy.hp = 50;
   const repaired = resolveTurn(siphon, "paper");
-  assert.equal(repaired.enemy.hp, 58);
+  assert.equal(repaired.enemy.hp, 62);
   assert.equal(repaired.result.enemyHealing, 12);
   siphon.enemy.hp = 1;
-  assert.equal(resolveTurn(siphon, "paper").enemy.hp, 0);
-  assert.equal(resolveTurn(siphon, "paper").result.enemyHealing, 0);
+  assert.equal(resolveTurn(siphon, "paper").enemy.hp, 13);
+  assert.equal(resolveTurn(siphon, "paper").result.enemyHealing, 12);
   const plated = apex("plating");
   plated.charge = 80;
   assert.equal(resolveTurn(plated, "rock").result.damage, 18);

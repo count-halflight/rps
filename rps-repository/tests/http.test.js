@@ -63,7 +63,7 @@ test("HTTP service preserves offline play and serves the production assets", asy
       const page = await fetch(base);
       assert.equal(page.status, 200);
       assert.match(await page.text(), /Trinity/);
-      const model = await fetch(`${base}/models/echo-frame.glb`, {
+      const model = await fetch(`${base}/models/echo-human.glb`, {
         method: "HEAD",
       });
       assert.equal(model.status, 200);

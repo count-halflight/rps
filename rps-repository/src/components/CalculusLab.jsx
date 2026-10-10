@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ChevronDown, Sigma } from "lucide-react";
+import { damageFor } from "../game/engine";
 import {
   pulseRate,
   pulseIntegral,
@@ -8,7 +9,12 @@ import {
   resourceRates,
 } from "../game/calculus";
 
-export function IntegralGraph({ damage = 23, slices = 24, cinematic = false }) {
+export function IntegralGraph({
+  damage = 23,
+  slices = 24,
+  cinematic = false,
+  concealValue = false,
+}) {
   const points = Array.from(
     { length: 65 },
     (_, i) =>
@@ -19,7 +25,11 @@ export function IntegralGraph({ damage = 23, slices = 24, cinematic = false }) {
       viewBox="0 0 300 135"
       className={`integral-graph ${cinematic ? "integral-cinematic" : ""}`}
       role="img"
-      aria-label={`Area under an impact rate curve. Its exact integral is ${damage}.`}
+      aria-label={
+        concealValue
+          ? "Area under an impact rate curve."
+          : `Area under an impact rate curve. Its exact integral is ${damage}.`
+      }
     >
       <path d="M15 13V108H288" className="graph-axis" />
       {Array.from({ length: slices }, (_, i) => {
@@ -61,7 +71,8 @@ export default function CalculusLab({ run, stance }) {
     [slices, setSlices] = useState(8);
   const rates = resourceRates(run, stance),
     next = resourceProjection(run, stance),
-    damage = run.result?.damage || 23;
+    lastHit = run.result?.damage || run.result?.incoming,
+    damage = lastHit || damageFor(run, "win", stance);
   const signed = (value) => `${value > 0 ? "+" : ""}${value}`;
   const crossing =
     rates.heat > 0 && run.heat < 75 ? (75 - run.heat) / rates.heat : null;
@@ -75,7 +86,7 @@ export default function CalculusLab({ run, stance }) {
       >
         <Sigma size={16} />
         <span>
-          Signal lab <small>Learn the mathematics of your frame</small>
+          Calculus <small>Optional lessons</small>
         </span>
         <ChevronDown size={15} />
       </button>
@@ -102,8 +113,8 @@ export default function CalculusLab({ run, stance }) {
                 <h3>A derivative is a rate.</h3>
                 <p>
                   With {stance}, heat changes by {signed(rates.heat)} per
-                  exchange. The slope predicts where your frame goes next.
-                  Cooling and augments change that slope.
+                  exchange. The slope predicts where your fighter goes next.
+                  Cooling and upgrades change that slope.
                 </p>
                 <code>H(t) = H₀ + rt · H′(t) = {rates.heat}</code>
                 <small>
@@ -119,7 +130,7 @@ export default function CalculusLab({ run, stance }) {
                 <path d="M22 12V111H245" className="graph-axis" />
                 <path d="M22 40H245" className="graph-limit" />
                 <text x="27" y="34">
-                  75 · overdrive limit
+                  75 · heavy attacks lock
                 </text>
                 <polyline
                   points={Array.from(
@@ -146,13 +157,13 @@ export default function CalculusLab({ run, stance }) {
               <div>
                 <h3>An integral collects change.</h3>
                 <p>
-                  Veil makes this visible. Thin slices of an impact-rate curve
-                  build the pulse’s total effect. More slices give a closer
-                  approximation.
+                  Paper attacks make this visible. Thin slices of an impact-rate
+                  curve build the pulse’s total effect. More slices give a
+                  closer approximation.
                 </p>
                 <code>∫₀¹ 6D·t(1−t) dt = D</code>
                 <small>
-                  {run.result ? "Last attack" : "Example pulse"}: D = {damage}.
+                  {lastHit ? "Last hit" : "Example pulse"}: D = {damage}.
                   Exact area {pulseIntegral(damage)}. Slice estimate{" "}
                   {riemannSum(damage, slices).toFixed(2)}.
                 </small>
@@ -178,8 +189,8 @@ export default function CalculusLab({ run, stance }) {
                 <p>
                   Limits describe what a function approaches. As t approaches{" "}
                   {crossing !== null ? crossing.toFixed(2) : "a boundary"}, heat
-                  can approach 75. At 75, the frame’s rules change: overdrive
-                  locks and damage drops.
+                  can approach 75. At 75, the fighter’s rules change: heavy
+                  attacks lock and damage drops.
                 </p>
                 <code>
                   {crossing !== null
@@ -188,9 +199,9 @@ export default function CalculusLab({ run, stance }) {
                 </code>
                 <small>
                   {next.heat >= 75
-                    ? "This exchange ends overheated. Guard or coolant can improve the next turn."
+                    ? "This exchange ends overheated. A safe attack or coolant can improve the next turn."
                     : rates.heat <= 0
-                      ? "This protocol holds or lowers heat. You are moving away from the ceiling."
+                      ? "This choice holds or lowers heat. You are moving away from the ceiling."
                       : `This exchange ends at ${next.heat} heat, below the ceiling.`}
                 </small>
               </div>

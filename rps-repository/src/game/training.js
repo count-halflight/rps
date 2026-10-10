@@ -2,31 +2,31 @@ import { newRun, levelFor } from "./engine.js";
 
 export const TRAINING_LESSONS = [
   {
-    title: "Break the blades.",
-    text: "The trainer broadcasts Razor with certainty. Choose Seismic, then Engage. Rock counters scissors.",
+    title: "Win a hand.",
+    text: "The trainer will play scissors. Tap Rock, then choose the first attack.",
     weapon: "rock",
     signal: 2,
   },
   {
-    title: "Turn force into silence.",
-    text: "The signal is Seismic now. Choose Veil, then Engage. Paper counters rock.",
+    title: "Try paper.",
+    text: "The trainer will play rock. Tap Paper, then choose an attack. Items also use your winning turn.",
     weapon: "paper",
     signal: 0,
   },
   {
-    title: "Spend the charge.",
-    text: "Choose Razor to counter Veil. Open Tactics on a phone, select Overdrive, then Engage. It doubles damage for 40 charge.",
+    title: "Try a heavy attack.",
+    text: "The trainer will play paper. Tap Scissors, then choose the third attack. It costs 40 charge and deals double damage.",
     weapon: "scissors",
     signal: 1,
     stance: "overdrive",
   },
   {
-    title: "Meet Cinder, your first apex.",
-    text: "Read each confirmed signal and choose its counter. Cinder adds heat every exchange. Guard builds charge and stays cooler. Defeat it to finish training.",
+    title: "Beat the trainer.",
+    text: "Cinder always shows his next hand. Win an opening, then choose an attack. Heavy attacks add heat. Use a coolant item to cool down.",
   },
   {
-    title: "Your instincts are online.",
-    text: "You read the cycle, released overdrive, and defeated an apex. Real circuits introduce uncertain forecasts, shifting districts, and salvage. Your main run is ready.",
+    title: "Training complete",
+    text: "You’re ready. In a real fight, the rival’s tell can be wrong. You can leave training at any time.",
   },
 ];
 
@@ -87,6 +87,7 @@ export function progressTraining(training, next) {
     const lesson = TRAINING_LESSONS[step];
     const passed =
       next.result?.outcome === "win" &&
+      next.result.damage > 0 &&
       next.result.playerWeapon === lesson.weapon &&
       (!lesson.stance || next.result.stance === lesson.stance);
     if (!passed)
@@ -94,7 +95,7 @@ export function progressTraining(training, next) {
         step,
         feedback:
           step === 2
-            ? "Arm Overdrive before committing the Razor strike. Your charge is replenished."
+            ? "Choose the third attack after winning. Your charge has been restored."
             : "Follow the confirmed signal. The trainer has reset for another try.",
         run: drill(next, step),
       };
@@ -114,7 +115,7 @@ export function progressTraining(training, next) {
     return {
       step: 3,
       feedback:
-        "Cinder found an opening. The training frame is restored. Counter the confirmed signal and try again.",
+        "Cinder found an opening. Your health is restored. Counter the confirmed signal and try again.",
       run: tutorialBoss(next),
     };
   return {
@@ -129,15 +130,15 @@ export function trainingDossier(step) {
     ? {
         name: "Signal trainer",
         title: "Academy relay",
-        taunt: "No static here. Learn the shape of a counter.",
+        taunt: "I’ll show you my next hand.",
         story:
-          "An old academy frame with its combat governor engaged. Its signals are exact, its damage is limited, and every drill can be repeated.",
+          "An academy instructor who calls each hand before attacking. The forecasts are exact and every drill can be repeated.",
       }
     : {
         name: "Cinder",
         title: "The academy’s last lesson",
-        taunt: "Three instincts. Let’s see which one survives the heat.",
+        taunt: "One last fight. Ready?",
         story:
-          "A retired foundry sentinel rebuilt to train new pilots. Its thermal core adds heat to every exchange. Confirmed forecasts let you practice reading the cycle before the city starts lying.",
+          "A retired foundry champion who trains newcomers. Heated reflex implants add heat to every exchange. Confirmed forecasts let you practice reading the cycle before the city starts lying.",
       };
 }

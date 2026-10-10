@@ -20,8 +20,8 @@ export default function SettingsDialog({
     setPreferences((p) => ({ ...p, [key]: value }));
   return (
     <Modal
-      title="Tune your neural link."
-      eyebrow="Frame settings"
+      title="Settings"
+      eyebrow="Sound & display"
       onClose={onClose}
       className="settings-modal"
     >
@@ -31,7 +31,7 @@ export default function SettingsDialog({
             <Volume2 size={16} />
             Sound
           </h3>
-          <p>Combat feedback and the city’s pulse.</p>
+          <p>Attack sounds and music.</p>
         </div>
         <button
           className={`setting-toggle ${sound ? "on" : ""}`}
@@ -61,8 +61,8 @@ export default function SettingsDialog({
       </div>
       <div className="setting-row">
         <div>
-          <h3>Atmosphere</h3>
-          <p>Let the district play underneath the fight.</p>
+          <h3>Music</h3>
+          <p>Music changes with both fighters’ health.</p>
         </div>
         <button
           className={`setting-toggle ${preferences.music ? "on" : ""}`}
@@ -121,25 +121,27 @@ export default function SettingsDialog({
           ))}
         </div>
       </div>
-      <div className="setting-row">
-        <div>
-          <h3>
-            <Radio size={16} />
-            Live dossiers
-          </h3>
-          <p>Receive new rival stories when a live link is available.</p>
+      {import.meta.env.VITE_STATIC_HOST !== "true" && (
+        <div className="setting-row">
+          <div>
+            <h3>
+              <Radio size={16} />
+              Rival stories
+            </h3>
+            <p>Optional stories from the online service.</p>
+          </div>
+          <button
+            className={`setting-toggle ${preferences.liveDossiers ? "on" : ""}`}
+            aria-pressed={preferences.liveDossiers}
+            aria-label="Toggle live dossiers"
+            onClick={() => update("liveDossiers", !preferences.liveDossiers)}
+          >
+            <span />
+          </button>
         </div>
-        <button
-          className={`setting-toggle ${preferences.liveDossiers ? "on" : ""}`}
-          aria-pressed={preferences.liveDossiers}
-          aria-label="Toggle live dossiers"
-          onClick={() => update("liveDossiers", !preferences.liveDossiers)}
-        >
-          <span />
-        </button>
-      </div>
+      )}{" "}
       <button className="primary-button" onClick={onClose}>
-        Back to the circuit <ArrowRight size={17} />
+        Done <ArrowRight size={17} />
       </button>
     </Modal>
   );

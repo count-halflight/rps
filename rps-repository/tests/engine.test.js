@@ -33,7 +33,9 @@ test("each weapon wins, draws and loses correctly in both counter cycles", () =>
       assert.equal(win.hp, run.hp);
       assert.ok(win.enemy.hp < run.enemy.hp);
       assert.equal(draw.result.outcome, "draw");
-      assert.ok(draw.hp < run.hp);
+      assert.equal(draw.hp, run.hp);
+      assert.equal(draw.enemy.hp, run.enemy.hp);
+      assert.equal(loss.enemy.hp, run.enemy.hp);
       assert.equal(loss.result.outcome, "loss");
       assert.ok(loss.hp < draw.hp);
     }

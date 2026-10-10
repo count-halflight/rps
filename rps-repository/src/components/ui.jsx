@@ -41,7 +41,11 @@ export function Modal({ title, eyebrow, children, onClose, className = "" }) {
   useEffect(() => {
     const previous = document.activeElement;
     const node = panel.current;
-    const background = [...document.querySelectorAll(".site-header, main")];
+    const background = [
+      ...document.querySelectorAll(
+        ".game-surface, .title-screen, .character-select",
+      ),
+    ];
     const inertStates = background.map((element) => element.inert);
     background.forEach((element) => {
       element.inert = true;

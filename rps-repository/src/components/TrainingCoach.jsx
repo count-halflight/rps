@@ -35,11 +35,11 @@ export default function TrainingCoach({ training, busy, onExit }) {
       >
         {training.step === 4 ? (
           <>
-            Return to the circuit <ArrowRight size={17} />
+            Play <ArrowRight size={17} />
           </>
         ) : (
           <>
-            Leave training <X size={14} />
+            Skip tutorial <X size={14} />
           </>
         )}
       </button>

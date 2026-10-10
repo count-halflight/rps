@@ -56,7 +56,7 @@ test("each weapon has a distinct cinematic and finisher with bounded choreograph
       Math.abs(
         cinematicFrame(
           { ...final, playerWeapon: weapon },
-          (final.duration / 1000) * 0.43,
+          (final.duration / 1000) * final.impactAt,
         ).impact - 1,
       ) < 1e-9,
     );

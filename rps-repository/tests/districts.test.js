@@ -21,11 +21,11 @@ test("district modifiers agree with the combat feedback and resource changes", (
   garden.hp = 50;
   const restored = resolveTurn(garden, "scissors");
   assert.equal(restored.result.healing, 8);
-  assert.equal(restored.hp, 52);
+  assert.equal(restored.hp, 58);
   garden.hp = 100;
   const capped = resolveTurn(garden, "scissors");
   assert.equal(capped.hp, 100);
-  assert.equal(capped.result.healing, 6);
+  assert.equal(capped.result.healing, 0);
   const market = floor(4);
   market.enemy.hp = 1;
   assert.equal(resolveTurn(market, "rock").result.bounty, 300);

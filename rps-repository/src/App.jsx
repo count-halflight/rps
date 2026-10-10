@@ -1,23 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  BookOpen,
-  Coins,
-  Cpu,
-  Crosshair,
-  Expand,
-  Layers3,
-  SlidersHorizontal,
-  Target,
-  Trophy,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
+import { ArrowUpRight, Expand, Pause, Volume2, VolumeX } from "lucide-react";
 import BattleStage from "./components/BattleStage";
 import CombatConsole from "./components/CombatConsole";
 import GameDialogs from "./components/GameDialogs";
-import { pad } from "./components/ui";
 import {
   WEAPONS,
   newRun,
@@ -25,8 +10,11 @@ import {
   chooseUpgrade,
   loadSave,
   damageFor,
+  openingFor,
+  useEarnedItem,
 } from "./game/engine";
 import {
+  unlockAudio,
   playTone,
   configureAudio,
   setAmbience,
@@ -48,6 +36,8 @@ import {
   trainingDossier,
 } from "./game/training";
 import TrainingCoach from "./components/TrainingCoach";
+import CharacterSelect from "./components/CharacterSelect";
+import { fighterFor, rivalFighter } from "./game/fighters";
 function safeRead(key, fallback) {
   try {
     return JSON.parse(localStorage.getItem(key)) ?? fallback;
@@ -83,11 +73,14 @@ export default function App() {
     [stance, setStance] = useState("strike"),
     [busy, setBusy] = useState(false),
     [animation, setAnimation] = useState(null);
+  const [pending, setPending] = useState(null),
+    [selection, setSelection] = useState(null);
+  const selectedRun = useRef({});
   const [training, setTraining] = useState(null);
   const campaign = useRef(null);
   const [modal, setModal] = useState(null),
     [sound, setSound] = useState(
-      () => safeRead("trinity-sound", false) === true,
+      () => safeRead("trinity-sound-v2", true) === true,
     ),
     [record, setRecord] = useState(() => loadRecords());
   const [storageWarning, setStorageWarning] = useState(false),
@@ -103,7 +96,21 @@ export default function App() {
       return loadPreferences({ getItem: () => null });
     }
   });
-  const paused = Boolean(modal);
+  const [started, setStarted] = useState(false);
+  const [hasSave, setHasSave] = useState(() => {
+    try {
+      return Boolean(loadSave(localStorage));
+    } catch {
+      return false;
+    }
+  });
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const update = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", update);
+    return () => document.removeEventListener("fullscreenchange", update);
+  }, []);
+  const paused = Boolean(modal) || !started;
   const finish =
     FRAME_FINISHES.find(
       (f) => f.id === preferences.skin && finishUnlocked(f, record.level),
@@ -151,16 +158,16 @@ export default function App() {
   const ai = !training && liveAi;
   const overdriveLocked = run.charge < 40 || run.heat >= 75;
   useEffect(() => {
-    if (training) return;
+    if (training || (!started && !hasSave)) return;
     try {
       localStorage.setItem("trinity-save-v1", JSON.stringify(run));
     } catch {
       setStorageWarning(true);
     }
-  }, [run, training]);
+  }, [run, training, started, hasSave]);
   useEffect(() => {
     try {
-      localStorage.setItem("trinity-sound", JSON.stringify(sound));
+      localStorage.setItem("trinity-sound-v2", JSON.stringify(sound));
     } catch {}
   }, [sound]);
   useEffect(() => {
@@ -202,60 +209,140 @@ export default function App() {
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 2800);
   };
-  const engage = () => {
-    if (busyRef.current || modal || run.phase !== "ready") return;
-    if (stance === "overdrive" && overdriveLocked) return;
-    const next = resolveTurn(run, weapon, stance);
-    const cinematic = attackPresentation(
-      weapon,
-      run.enemy.hp <= damageFor(run, "win", stance),
-      preferences.motion === "reduced" ||
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    );
+  const commit = (next) => {
+    if (training) {
+      const lesson = progressTraining(training, next);
+      setTraining(lesson);
+      setRun(lesson.run);
+      if (lesson.step !== training.step && lesson.step !== 4) {
+        setAnimation(null);
+        setStance("strike");
+      }
+    } else setRun(next);
+    setPending(null);
+    busyRef.current = false;
+    setBusy(false);
+    if (next.phase === "upgrade" && !training) playTone("upgrade", sound);
+  };
+  const reducedMotion = () =>
+    preferences.motion === "reduced" ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const perform = (hand, attackStance = "strike", variant = 0, item = null) => {
+    const next = item
+      ? useEarnedItem(run, hand, item)
+      : resolveTurn(run, hand, attackStance);
+    if (next === run) return;
     busyRef.current = true;
     setBusy(true);
+    setPending(null);
+    if (item) {
+      setAnimation(null);
+      playTone("upgrade", sound);
+      notify(
+        item === "medkit"
+          ? `+${next.result.healing} health`
+          : item === "coolant"
+            ? "Heat cleared"
+            : " +35 charge",
+      );
+      timer.current = setTimeout(() => commit(next), 650);
+      return;
+    }
+    const loss = next.result.outcome === "loss",
+      attacker = loss
+        ? training?.step === 3
+          ? "cinder"
+          : rivalFighter(run.level).id
+        : run.character;
+    const cinematic = attackPresentation(
+      loss ? next.result.enemyWeapon : hand,
+      loss ? next.hp === 0 : next.phase === "upgrade",
+      reducedMotion(),
+      variant,
+      attacker,
+    );
     setAnimation({
       ...next.result,
       ...cinematic,
-      finalHit: next.phase === "upgrade",
-      potentialDamage: damageFor(run, "win", stance),
+      finalHit: loss ? next.phase === "defeat" : next.phase === "upgrade",
+      potentialDamage: loss
+        ? next.result.incoming
+        : damageFor(run, "win", attackStance),
       id: `${run.seed}-${run.level}-${next.turn}`,
     });
-    playTone("engage", sound);
+    playTone(loss ? next.result.enemyWeapon : hand, sound);
     playTone(
-      cinematic.finisher && next.phase === "upgrade"
-        ? "finisher"
-        : next.result.outcome,
+      cinematic.finisher ? "finisher" : next.result.outcome,
       sound,
-      (cinematic.duration / 1000) * (cinematic.finisher ? 0.43 : 0.4),
+      (cinematic.duration / 1000) * cinematic.impactAt,
     );
-    timer.current = setTimeout(() => {
-      if (training) {
-        const lesson = progressTraining(training, next);
-        setTraining(lesson);
-        setRun(lesson.run);
-        if (lesson.step !== training.step && lesson.step !== 4) {
-          setAnimation(null);
-          setStance("strike");
-        }
-      } else setRun(next);
-      busyRef.current = false;
-      setBusy(false);
-      if (next.phase === "upgrade" && !training) playTone("upgrade", sound);
-    }, cinematic.duration);
+    timer.current = setTimeout(() => commit(next), cinematic.duration);
+  };
+  const engage = (choice = weapon) => {
+    if (
+      !started ||
+      busyRef.current ||
+      pending ||
+      modal ||
+      run.phase !== "ready"
+    )
+      return;
+    const opening = openingFor(run, choice);
+    if (!opening) return;
+    setWeapon(choice);
+    setAnimation(null);
+    setPending({ ...opening, stage: "reveal", revealed: false });
+    busyRef.current = true;
+    setBusy(true);
+    playTone("select", sound);
+    timer.current = setTimeout(
+      () => {
+        setPending({ ...opening, stage: "reveal", revealed: true });
+        playTone(opening.outcome === "win" ? "win" : "select", sound);
+        timer.current = setTimeout(() => {
+          if (opening.outcome === "win") {
+            setPending({ ...opening, stage: "action", revealed: true });
+            busyRef.current = false;
+            setBusy(false);
+          } else if (opening.outcome === "draw") {
+            setAnimation(null);
+            commit(resolveTurn(run, choice));
+          } else perform(choice, stance, run.turn % 3);
+        }, 450);
+      },
+      reducedMotion() ? 250 : 600,
+    );
+  };
+  const chooseAction = (index, item = null) => {
+    if (busyRef.current || pending?.stage !== "action" || modal) return;
+    perform(
+      pending.playerWeapon,
+      ["strike", "guard", "overdrive"][index] || "strike",
+      index || 0,
+      item,
+    );
   };
   action.current = engage;
   useEffect(() => {
     const handle = (e) => {
       if (e.target.matches("input,textarea,select") || e.repeat) return;
+      if (e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        fullscreen();
+        return;
+      }
       if (e.key === CONTROLS.pauseKey) {
         e.preventDefault();
         if (modal) setModal(null);
         else if (!busyRef.current && run.phase === "ready") setModal("pause");
         return;
       }
-      if (modal || run.phase !== "ready" || busyRef.current) return;
+      if (!started || modal || run.phase !== "ready" || busyRef.current) return;
       if (CONTROLS.weaponKeys.includes(e.key)) {
+        if (pending?.stage === "action") {
+          chooseAction(CONTROLS.weaponKeys.indexOf(e.key));
+          return;
+        }
         setWeapon(WEAPONS[CONTROLS.weaponKeys.indexOf(e.key)].id);
         playTone("select", sound);
       }
@@ -267,17 +354,43 @@ export default function App() {
     };
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [modal, run.phase, sound]);
+  }, [modal, run.phase, sound, started, pending]);
   const advance = (id) => {
     setRun((current) => chooseUpgrade(current, id));
     setAnimation(null);
+    setPending(null);
     setStance("strike");
     playTone("upgrade", sound);
   };
+  const begin = () => {
+    configureAudio(preferences.volume, sound);
+    unlockAudio();
+    setStarted(true);
+    setHasSave(true);
+  };
+  const selectFighter = () => {
+    configureAudio(preferences.volume, sound);
+    unlockAudio();
+    setRun(
+      newRun(
+        selectedRun.current.seed,
+        selectedRun.current.challenge,
+        selection,
+      ),
+    );
+    setHasSave(true);
+    setSelection(null);
+    setStarted(true);
+    setPending(null);
+    setAnimation(null);
+  };
   const train = () => {
+    begin();
     if (busyRef.current) return;
     if (!training) campaign.current = run;
     const lesson = startTraining();
+    setSelection(null);
+    setPending(null);
     setTraining(lesson);
     setRun(lesson.run);
     setWeapon("rock");
@@ -289,6 +402,7 @@ export default function App() {
     if (busyRef.current || !training) return;
     setRun(campaign.current || newRun());
     setTraining(null);
+    setPending(null);
     setAnimation(null);
     setWeapon("rock");
     setStance("strike");
@@ -298,7 +412,10 @@ export default function App() {
     clearTimeout(timer.current);
     busyRef.current = false;
     setBusy(false);
-    setRun(newRun(seed, challenge));
+    selectedRun.current = { seed, challenge };
+    setSelection(run.character || "echo");
+    setStarted(false);
+    setPending(null);
     setAnimation(null);
     setWeapon("rock");
     setStance("strike");
@@ -327,239 +444,153 @@ export default function App() {
         "--district-hue": `${((run.level - 1) % 6) * 38}deg`,
       }}
     >
-      <header className="site-header">
-        <a
-          className="brand"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            setModal(null);
-          }}
-          aria-label="Trinity circuit"
-        >
-          <span className="brand-mark">
-            <span />
-            <span />
-            <span />
-          </span>
-          <span>
-            trinity<span className="brand-dot">.</span>
-          </span>
-          <span className="brand-edition">afterlight</span>
-        </a>
-        <nav aria-label="Main navigation">
-          <button
-            className={!modal ? "nav-link active" : "nav-link"}
-            onClick={() => setModal(null)}
-          >
-            <Crosshair size={15} />
-            <span>The circuit</span>
-          </button>
-          <button
-            className={`nav-link ${modal === "archive" ? "active" : ""}`}
-            onClick={() => setModal("archive")}
-          >
-            <Layers3 size={15} />
-            <span>Your archive</span>
-          </button>
-          <button
-            className={`nav-link ${modal === "guide" ? "active" : ""}`}
-            onClick={() => setModal("guide")}
-          >
-            <BookOpen size={15} />
-            <span className="desktop-nav-label">Field guide</span>
-            <span className="mobile-nav-label">Guide</span>
-          </button>
-        </nav>
-        <div className="header-tools">
-          <button
-            className="local-link"
-            onClick={() => setModal("dossier")}
-            title="Read the rival dossier"
-          >
-            <i />
-            {ai ? "Live transmission" : "Local link"}
-          </button>
-          <span className="tool-divider" />
-          <button
-            className="icon-button"
-            aria-label={sound ? "Mute sound" : "Enable sound"}
-            title={sound ? "Mute sound" : "Enable sound"}
-            onClick={() => {
-              setSound(!sound);
-              playTone("select", !sound);
-            }}
-          >
-            {sound ? <Volume2 size={18} /> : <VolumeX size={18} />}
-          </button>
-          <button
-            className="icon-button settings-button"
-            aria-label="Open settings"
-            title="Settings"
-            onClick={() => setModal("settings")}
-          >
-            <SlidersHorizontal size={18} />
-          </button>
-          <button
-            className="icon-button fullscreen-button"
-            aria-label="Toggle fullscreen"
-            title="Fullscreen"
-            onClick={fullscreen}
-          >
-            <Expand size={18} />
-          </button>
-        </div>
-      </header>
-      <main>
-        {training ? (
-          <TrainingCoach
-            training={training}
+      {started && (
+        <main className="game-surface">
+          <BattleStage
+            run={run}
+            weapon={weapon}
+            animation={animation}
+            pending={pending}
             busy={busy}
-            onExit={leaveTraining}
+            paused={paused}
+            dossier={dossier}
+            preferences={preferences}
+            finish={finish}
           />
-        ) : (
-          <section className="page-heading">
-            <div>
-              <p className="eyebrow">
-                <span className="tiny-line" />
-                {run.challenge ? "Today’s circuit" : "Undercity combat circuit"}
-              </p>
-              <h1>
-                Outthink the machine<span>.</span>
-              </h1>
-              <p className="page-subtitle">
-                Scrap-built frames. Borrowed instincts. A city with no bottom.
-              </p>
+          <header className="game-tools">
+            <button
+              className="menu-button"
+              aria-label="Pause game"
+              disabled={busy}
+              onClick={() => setModal("pause")}
+            >
+              <Pause size={18} /> <span>Menu</span>
+            </button>
+            <div className="hud-tools-right">
               <button
-                className="text-button tutorial-entry"
-                onClick={train}
-                disabled={busy}
+                className="sound-button"
+                aria-label={sound ? "Mute sound" : "Enable sound"}
+                onClick={() => {
+                  configureAudio(preferences.volume, !sound);
+                  unlockAudio();
+                  setSound(!sound);
+                }}
               >
-                <BookOpen size={13} /> Try the training circuit{" "}
-                <ArrowUpRight size={13} />
+                {sound ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                <span>{sound ? "Sound on" : "Sound off"}</span>
+              </button>
+              <button
+                className="fullscreen-button"
+                aria-label={
+                  isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                }
+                onClick={fullscreen}
+              >
+                <Expand size={19} />
+                <span>{isFullscreen ? "Windowed" : "Fullscreen"}</span>
               </button>
             </div>
-            <div className="run-stats">
-              <div>
-                <span className="stat-label">
-                  <Coins size={14} />
-                  Run credits
-                </span>
-                <strong>
-                  {run.credits.toLocaleString()}
-                  <span> cr</span>
-                </strong>
-              </div>
-              <span className="stat-divider" />
-              <div>
-                <span className="stat-label">
-                  <Trophy size={14} />
-                  Best descent
-                </span>
-                <strong>
-                  {pad(record.level)}
-                  <span> floors</span>
-                </strong>
-              </div>
-            </div>
-          </section>
-        )}
-        <BattleStage
-          run={run}
-          weapon={weapon}
-          animation={animation}
-          busy={busy}
-          paused={paused}
-          dossier={dossier}
+          </header>
+          {training && (
+            <TrainingCoach
+              training={training}
+              busy={busy}
+              onExit={leaveTraining}
+            />
+          )}
+          <CombatConsole
+            run={run}
+            setRun={setRun}
+            weapon={weapon}
+            setWeapon={setWeapon}
+            pending={pending}
+            chooseAction={chooseAction}
+            stance={stance}
+            setStance={setStance}
+            busy={busy}
+            modal={modal}
+            sound={sound}
+            engage={engage}
+            notify={notify}
+            onGuide={() => setModal("guide")}
+          />
+          {storageWarning && (
+            <span className="save-warning">
+              Progress could not save on this device.
+            </span>
+          )}
+        </main>
+      )}
+      {selection && (
+        <CharacterSelect
+          selected={selection}
+          setSelected={setSelection}
           preferences={preferences}
-          finish={finish}
-          onPause={() => setModal("pause")}
-          onDossier={() => setModal("dossier")}
+          onStart={selectFighter}
+          onBack={() => {
+            setSelection(null);
+            setStarted(false);
+          }}
         />
-        <CombatConsole
-          run={run}
-          setRun={setRun}
-          weapon={weapon}
-          setWeapon={setWeapon}
-          stance={stance}
-          setStance={setStance}
-          busy={busy}
-          modal={modal}
-          sound={sound}
-          engage={engage}
-          notify={notify}
-          onGuide={() => setModal("guide")}
-        />
-        <section className="descent-strip">
-          <div className="descent-title">
-            <span className="descent-icon">
-              <ArrowDownRight size={19} />
-            </span>
-            <div>
-              <h3>Your descent</h3>
-              <p>Every floor rewrites the rules.</p>
-            </div>
-          </div>
-          <div className="floor-route">
-            {Array.from({ length: 5 }, (_, i) => {
-              const level = run.level + i;
-              return (
-                <div
-                  key={level}
-                  className={`floor-node ${i === 0 ? "current" : ""} ${level % 5 === 0 ? "apex" : ""}`}
-                >
-                  <span>
-                    {level % 5 === 0 ? (
-                      <Target size={15} />
-                    ) : i === 0 ? (
-                      <Crosshair size={15} />
-                    ) : (
-                      <span className="node-dot" />
-                    )}
-                  </span>
-                  <div>
-                    <b>{pad(level)}</b>
-                    <small>
-                      {i === 0
-                        ? "Current"
-                        : level % 5 === 0
-                          ? "Apex"
-                          : "Unknown"}
-                    </small>
-                  </div>
-                  {i < 4 && <span className="route-line" />}
-                </div>
-              );
-            })}
-          </div>
-          <div className="installed-mods">
-            <Cpu size={16} />
-            <span>
-              {Object.values(run.upgrades).reduce((a, b) => a + b, 0)} augments
-              installed
-            </span>
+      )}
+      {!started && !selection && (
+        <div className="title-screen">
+          <div className="title-art" />
+          <div className="title-content">
+            <p className="title-credit">a game by Halflight</p>
+            <h1>
+              Trinity<span>afterlight</span>
+            </h1>
+            <p className="title-tagline">Win the hand. Pick your attack.</p>
             <button
-              className="icon-button"
-              onClick={() => setModal("archive")}
-              aria-label="View installed augments"
+              className="start-button"
+              onClick={() => {
+                if (hasSave) begin();
+                else {
+                  selectedRun.current = {
+                    seed: run.seed,
+                    challenge: run.challenge,
+                  };
+                  setSelection(run.character || "echo");
+                }
+              }}
             >
-              <ArrowUpRight size={15} />
+              {hasSave ? "Continue" : "Play"}
+              <ArrowUpRight size={23} />
             </button>
+            {hasSave && (
+              <button className="new-game-title" onClick={() => restart()}>
+                New game · choose a fighter
+              </button>
+            )}
+            <button className="training-start" onClick={train}>
+              Learn to fight <span>Optional tutorial</span>
+            </button>
+            <div className="title-options">
+              <button onClick={() => setSound(!sound)}>
+                {sound ? <Volume2 size={17} /> : <VolumeX size={17} />}{" "}
+                {sound ? "Sound on" : "Sound off"}
+              </button>
+              <button onClick={() => setModal("settings")}>Settings</button>
+              <button
+                className="fullscreen-button"
+                onClick={fullscreen}
+                aria-label={
+                  isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                }
+              >
+                <Expand size={17} />
+                {isFullscreen ? "Windowed" : "Fullscreen"}
+              </button>
+            </div>
+            <small className="title-best">
+              {record.level > 1
+                ? `Personal best: floor ${record.level}`
+                : "Rock · paper · scissors · survive"}
+            </small>
           </div>
-        </section>
-        <footer className="site-footer">
-          <span>
-            <span className="footer-mark">△</span>Instinct is human. The rest is
-            machinery.
-          </span>
-          <span>
-            {storageWarning
-              ? "Progress saving unavailable"
-              : "Progress saved on this device"}
-            <i className="save-dot" />
-          </span>
-        </footer>
-      </main>
+        </div>
+      )}
       {toast && (
         <div className="toast" role="status">
           {toast}
@@ -584,11 +615,13 @@ export default function App() {
         record={record}
         dossier={dossier}
         ai={ai}
-        busy={busy}
+        busy={busy || !started}
         advance={advance}
         restart={restart}
         preferences={preferences}
         setPreferences={setPreferences}
+        onFullscreen={fullscreen}
+        isFullscreen={isFullscreen}
         onTraining={train}
         training={Boolean(training)}
       />

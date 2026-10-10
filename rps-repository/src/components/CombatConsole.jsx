@@ -1,30 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
-  Activity,
-  ArrowRight,
-  ArrowUpRight,
-  Check,
   ChevronDown,
-  CircleHelp,
-  Cpu,
   Crosshair,
-  Flame,
+  X,
   Heart,
-  RotateCcw,
-  Shield,
-  Swords,
-  Target,
-  Zap,
+  Flame,
+  Battery,
+  ArrowLeft,
+  ShoppingBag,
 } from "lucide-react";
 import {
   WEAPONS,
   STANCES,
   weaponFor,
   scanSignal,
-  repairFrame,
+  damageFor,
+  itemAvailable,
 } from "../game/engine";
+import { fighterFor, ITEM_TYPES, MOVE_STANCES } from "../game/fighters";
 import { playTone } from "../game/audio";
 import WeaponIcon from "./WeaponIcon";
+import WeaponMark from "./WeaponMark";
 import CalculusLab from "./CalculusLab";
 export default function CombatConsole({
   run,
@@ -33,253 +29,238 @@ export default function CombatConsole({
   setWeapon,
   stance,
   setStance,
+  pending,
+  chooseAction,
   busy,
   modal,
   sound,
   engage,
-  notify,
   onGuide,
 }) {
-  const [tacticsOpen, setTacticsOpen] = useState(false);
-  const district = run.enemy.district,
-    intent = run.scanned ? weaponFor(run.scanned) : WEAPONS[run.enemy.signal],
-    selected = weaponFor(weapon),
-    overdriveLocked = run.charge < 40 || run.heat >= 75;
+  const bar = useRef(null);
+  useEffect(() => {
+    const node = bar.current,
+      parent = node.closest(".game-surface"),
+      sync = () =>
+        parent.style.setProperty(
+          "--console-height",
+          `${node.getBoundingClientRect().height}px`,
+        );
+    const observer = new ResizeObserver(sync);
+    observer.observe(node);
+    sync();
+    return () => {
+      observer.disconnect();
+      parent.style.removeProperty("--console-height");
+    };
+  }, []);
+  const [open, setOpen] = useState(false),
+    [bag, setBag] = useState(false);
+  const intent = run.scanned
+      ? weaponFor(run.scanned)
+      : WEAPONS[run.enemy.signal],
+    disabled = busy || run.phase !== "ready" || !!modal;
+  const earned = pending?.stage === "action",
+    fighter = fighterFor(run.character),
+    hand = pending?.playerWeapon || weapon;
   return (
     <section
-      className={`combat-console ${tacticsOpen ? "tactics-open" : ""}`}
+      ref={bar}
+      className={`combat-console ${earned ? "action-ready" : ""} ${open ? "tactics-open" : ""}`}
       aria-label="Combat controls"
     >
-      <div className="signal-strip">
-        <div className="signal-main">
-          <span className="signal-icon">
-            <Activity size={17} />
-          </span>
-          <span className="signal-name">Enemy signal</span>
-          <WeaponIcon type={intent.id} size={25} />
-          <strong>{intent.name}</strong>
-          <span className="signal-likelihood">
-            {run.scanned
-              ? "100% confirmed"
-              : `${run.enemy.confidence}% likelihood`}
-          </span>
+      <div className="combat-read">
+        <span>
+          {earned
+            ? `${weaponFor(hand).type} won. ${bag ? "Use an item" : "Choose an attack"}`
+            : busy
+              ? "Wait for it…"
+              : run.result?.item
+                ? "Item used. Choose a hand."
+                : run.result?.outcome === "loss"
+                  ? "Your turn. Choose a hand."
+                  : run.result?.outcome === "draw"
+                    ? "Draw. Choose again."
+                    : "Tap rock, paper or scissors"}
+        </span>
+        <div className="enemy-tell">
+          <span>Rival’s tell</span>
+          <WeaponIcon type={intent.id} size={20} />
+          <b>{intent.type}</b>
+          <small>{run.scanned ? "Certain" : `${run.enemy.confidence}%`}</small>
         </div>
-        <div className="signal-tip">
-          {district.reverse ? (
-            <>
-              <RotateCcw size={13} />
-              Counter cycle reversed
-            </>
-          ) : (
-            <>
-              <CircleHelp size={13} />A signal, not a promise
-            </>
-          )}
-        </div>
-        <button className="text-button" onClick={() => onGuide()}>
-          Learn the cycle <ArrowUpRight size={13} />
-        </button>
       </div>
-      {run.enemy.ability && (
-        <div className="apex-warning">
-          <Target size={14} />
-          <b>{run.enemy.ability.name}</b>
-          <span>{run.enemy.ability.detail}</span>
+      {earned ? (
+        <div className="earned-actions">
+          {bag ? (
+            <div className="item-loadout">
+              {ITEM_TYPES.map((item, index) => {
+                const Icon = [Heart, Flame, Battery][index];
+                return (
+                  <button
+                    key={item.id}
+                    className="item-card"
+                    disabled={disabled || !itemAvailable(run, item.id)}
+                    onClick={() => {
+                      setBag(false);
+                      chooseAction(0, item.id);
+                    }}
+                  >
+                    <Icon size={25} />
+                    <div>
+                      <b>
+                        {item.name} <small>×{run.inventory[item.id]}</small>
+                      </b>
+                      <span>{item.detail}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="attack-loadout">
+              {fighter.moves[hand].map((name, index) => {
+                const attackStance = MOVE_STANCES[index],
+                  locked = index === 2 && (run.charge < 40 || run.heat >= 75);
+                return (
+                  <button
+                    key={name}
+                    className={`attack-card attack-${index}`}
+                    disabled={disabled || locked}
+                    onClick={() => chooseAction(index)}
+                  >
+                    <small className="attack-kind">
+                      {index === 0
+                        ? "Quick attack"
+                        : index === 1
+                          ? "Safe attack"
+                          : "Heavy attack"}
+                    </small>
+                    <WeaponMark style={fighter.style} size={27} />
+                    <b>{name}</b>
+                    <span>
+                      {damageFor(run, "win", attackStance)} damage ·{" "}
+                      {index === 2
+                        ? "−40 charge"
+                        : index === 1
+                          ? "+22 charge"
+                          : "+14 charge"}
+                    </span>
+                    {locked && (
+                      <small>
+                        {run.heat >= 75 ? "Too hot" : "Not enough charge"}
+                      </small>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <button
+            className="bag-button"
+            onClick={() => setBag(!bag)}
+            disabled={disabled}
+          >
+            {bag ? <ArrowLeft size={21} /> : <ShoppingBag size={21} />}
+            <span>{bag ? "Attacks" : "Items"}</span>
+          </button>
+        </div>
+      ) : (
+        <div className="loadout-row">
+          <div className="weapon-loadout">
+            {WEAPONS.map((w, index) => {
+              const beats = run.enemy.district.reverse
+                ? WEAPONS.find((other) => other.beats === w.id)
+                : weaponFor(w.beats);
+              return (
+                <button
+                  key={w.id}
+                  className={`weapon-card ${weapon === w.id ? "selected" : ""}`}
+                  style={{ "--weapon-color": fighter.color }}
+                  aria-pressed={weapon === w.id}
+                  disabled={disabled || !!pending}
+                  onClick={() => {
+                    setOpen(false);
+                    setBag(false);
+                    setWeapon(w.id);
+                    engage(w.id);
+                  }}
+                >
+                  <span className="weapon-key">{index + 1}</span>
+                  <WeaponIcon type={w.id} size={39} />
+                  <div>
+                    <b>{w.type}</b>
+                    <small>beats {beats.type.toLowerCase()}</small>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
-      <div className="loadout-row">
-        <div className="weapon-loadout">
-          {WEAPONS.map((w, index) => {
-            const beats = district.reverse
-              ? WEAPONS.find((other) => other.beats === w.id)
-              : weaponFor(w.beats);
-            return (
-              <button
-                key={w.id}
-                style={{ "--weapon-color": w.color }}
-                className={`weapon-card ${weapon === w.id ? "selected" : ""}`}
-                aria-pressed={weapon === w.id}
-                disabled={busy || run.phase !== "ready"}
-                onClick={() => {
-                  setWeapon(w.id);
-                  playTone("select", sound);
-                }}
-              >
-                <span className="weapon-key">0{index + 1}</span>
-                <span className="weapon-art">
-                  <WeaponIcon type={w.id} />
-                </span>
-                <div className="weapon-info">
-                  <span className="weapon-type">{w.type}</span>
-                  <h3>{w.name}</h3>
-                  <span className="weapon-matchup">
-                    Counters {beats.name.toLowerCase()}
-                  </span>
-                </div>
-                <span className="selection-indicator">
-                  {weapon === w.id && <Check size={12} />}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="engage-block">
-          <button
-            className="engage-button"
-            disabled={busy || run.phase !== "ready" || modal !== null}
-            onClick={engage}
-          >
-            <span>
-              {busy
-                ? "Engaging"
-                : stance === "overdrive"
-                  ? "Release overdrive"
-                  : "Engage"}
-              <small>
-                {busy ? "Resolving exchange" : `${selected.name} ${stance}`}
-              </small>
-            </span>
-            {busy ? <Activity size={23} /> : <ArrowRight size={24} />}
-          </button>
-          <span className="key-hint">
-            <kbd>Space</kbd> to engage<span>·</span>
-            <kbd>1</kbd>
-            <kbd>2</kbd>
-            <kbd>3</kbd> to switch
+      <div className="combat-foot">
+        <div className="resource-strip">
+          <span className="charge-text">
+            Charge <b>{run.charge}</b>
           </span>
+          <span className={run.heat >= 75 ? "hot" : ""}>
+            Heat <b>{run.heat}</b>
+          </span>
+          <span>{run.credits} cr</span>
         </div>
-      </div>
-      <button
-        className="mobile-tactics-toggle"
-        aria-expanded={tacticsOpen}
-        aria-controls="frame-tactics"
-        onClick={() => setTacticsOpen(!tacticsOpen)}
-      >
-        <span>
-          <Cpu size={15} /> Tactics{" "}
-          <small>
-            {stance === "strike"
-              ? "Optional"
-              : stance === "guard"
-                ? "Guard active"
-                : "Overdrive armed"}
-          </small>
-        </span>
-        <ChevronDown size={16} />
-      </button>
-      <div className="utility-row" id="frame-tactics">
-        <span className="utility-label">
-          <Cpu size={13} />
-          Frame utilities
-        </span>
         <button
-          disabled={
-            busy ||
-            run.phase !== "ready" ||
-            run.charge < 30 ||
-            Boolean(run.scanned) ||
-            run.scanUsed
-          }
-          onClick={() => {
-            setRun((current) => scanSignal(current));
-            playTone("select", sound);
-          }}
-          title="Spend 30 charge to reveal the exact next enemy weapon. Once per floor."
+          className="mobile-tactics-toggle"
+          aria-expanded={open}
+          aria-controls="frame-tactics"
+          onClick={() => setOpen(!open)}
+          disabled={disabled || !!pending}
         >
-          <Crosshair size={13} />
-          {run.scanned
-            ? "Signal confirmed"
-            : run.scanUsed
-              ? "Scan spent"
-              : "Deep scan"}
-          <small>
-            30 <Zap size={10} />
-          </small>
+          Options{open ? <X size={14} /> : <ChevronDown size={14} />}
         </button>
-        <button
-          disabled={
-            busy ||
-            run.phase !== "ready" ||
-            run.credits < 80 ||
-            run.hp >= run.maxHp ||
-            run.repairUsed
-          }
-          onClick={() => {
-            setRun((current) => repairFrame(current));
-            playTone("upgrade", sound);
-            notify(
-              `Field repair complete. +${Math.min(30, run.maxHp - run.hp)} integrity.`,
-            );
-          }}
-          title={`Recover ${Math.min(30, run.maxHp - run.hp)} integrity for 80 credits. Once per floor.`}
-        >
-          <Heart size={13} />
-          {run.repairUsed ? "Repair used" : "Field repair"}
-          <small>80 cr</small>
-        </button>
-        <span className="utility-note">
-          Information or firepower. Choose what matters.
-        </span>
       </div>
-      <div className="systems-row">
-        <div className="stance-control" aria-label="Combat stance">
-          <span>Protocol</span>
-          {STANCES.map((s) => (
+      {open && (
+        <div className="tactics-drawer" id="frame-tactics">
+          <div className="stance-control" aria-label="Defence when losing">
+            {STANCES.filter((s) => s.id !== "overdrive").map((s) => (
+              <button
+                key={s.id}
+                aria-pressed={stance === s.id}
+                className={stance === s.id ? "active" : ""}
+                onClick={() => setStance(s.id)}
+              >
+                <b>{s.id === "strike" ? "Normal defence" : "Brace"}</b>
+                <small>
+                  {s.id === "strike"
+                    ? "Normal incoming damage"
+                    : "Take half damage if you lose"}
+                </small>
+              </button>
+            ))}
+          </div>
+          <div className="utility-row">
             <button
-              key={s.id}
-              aria-pressed={stance === s.id}
-              title={s.hint}
               disabled={
-                busy ||
-                run.phase !== "ready" ||
-                (s.id === "overdrive" && overdriveLocked)
+                disabled || run.charge < 30 || run.scanned || run.scanUsed
               }
-              className={stance === s.id ? "active" : ""}
-              onClick={() => setStance(s.id)}
+              onClick={() => {
+                setRun((r) => scanSignal(r));
+                playTone("select", sound);
+              }}
             >
-              {s.id === "strike" ? (
-                <Swords size={13} />
-              ) : s.id === "guard" ? (
-                <Shield size={13} />
-              ) : (
-                <Zap size={13} />
-              )}{" "}
-              {s.name}
-              {s.id === "overdrive" && <small>40</small>}
+              <Crosshair size={16} />
+              {run.scanUsed ? "Scan used" : "Read hand"}
+              <small>30 charge · once per floor</small>
             </button>
-          ))}
-        </div>
-        {tacticsOpen && (
-          <p className="mobile-stance-hint">
-            {STANCES.find((s) => s.id === stance).hint}
-          </p>
-        )}
-        <div className="system-meter charge-meter">
-          <Zap size={14} />
-          <span>Charge</span>
-          <div>
-            <i style={{ width: `${run.charge}%` }} />
+            <button onClick={onGuide}>Rules</button>
           </div>
-          <b>
-            {run.charge}
-            <span>%</span>
-          </b>
+          {run.enemy.ability && (
+            <p className="apex-warning">
+              <b>{run.enemy.ability.name}</b> {run.enemy.ability.detail}
+            </p>
+          )}
+          <CalculusLab run={run} stance={stance} />
         </div>
-        <div
-          className={`system-meter heat-meter ${run.heat >= 75 ? "overheated" : ""}`}
-        >
-          <Flame size={14} />
-          <span>{run.heat >= 75 ? "Overheated" : "Heat"}</span>
-          <div>
-            <i style={{ width: `${run.heat}%` }} />
-          </div>
-          <b>
-            {run.heat}
-            <span>%</span>
-          </b>
-        </div>
-      </div>
-      <CalculusLab run={run} stance={stance} />
+      )}
     </section>
   );
 }

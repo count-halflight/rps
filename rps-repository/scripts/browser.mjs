@@ -11,7 +11,7 @@ export async function launchBrowser() {
   const browser = spawn(
     process.env.CHROMIUM_PATH || "chromium",
     [
-      "--headless",
+      ...(process.env.BROWSER_HEADED === "1" ? [] : ["--headless"]),
       "--no-sandbox",
       "--disable-dev-shm-usage",
       "--enable-unsafe-swiftshader",
@@ -50,12 +50,20 @@ export async function launchBrowser() {
     });
   });
   const port = new URL(endpoint).port;
-  const targets = await (
-    await fetch(`http://127.0.0.1:${port}/json/list`)
-  ).json();
-  const ws = new WebSocket(
-    targets.find((target) => target.type === "page").webSocketDebuggerUrl,
-  );
+  let target;
+  const targetStarted = Date.now();
+  while (!target && Date.now() - targetStarted < 15000) {
+    const targets = await (
+      await fetch(`http://127.0.0.1:${port}/json/list`)
+    ).json();
+    target = targets.find((t) => t.type === "page");
+    if (!target) await delay(100);
+  }
+  if (!target) {
+    browser.kill("SIGTERM");
+    throw new Error("Browser did not open a page");
+  }
+  const ws = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve) =>
     ws.addEventListener("open", resolve, { once: true }),
   );
@@ -196,6 +204,8 @@ export async function launchBrowser() {
   await call("Runtime.enable");
   await call("Page.enable");
   await call("Network.enable");
+  await call("Emulation.setFocusEmulationEnabled", { enabled: true });
+  await call("Page.bringToFront");
   return {
     call,
     evaluate,

@@ -1,31 +1,32 @@
 import { resourceProjection } from "./calculus.js";
+import { FIGHTERS, fighterFor, inventoryFor, ITEM_TYPES } from "./fighters.js";
 export const WEAPONS = [
   {
     id: "rock",
-    name: "Seismic",
+    name: "Rock",
     type: "Rock",
     tag: "Kinetic gauntlet",
     color: "#63e8cf",
     beats: "scissors",
-    description: "Crushes pulse blades",
+    description: "Rock beats scissors.",
   },
   {
     id: "paper",
-    name: "Veil",
+    name: "Paper",
     type: "Paper",
     tag: "Phase shield",
     color: "#9cabff",
     beats: "rock",
-    description: "Absorbs kinetic force",
+    description: "Paper beats rock.",
   },
   {
     id: "scissors",
-    name: "Razor",
+    name: "Scissors",
     type: "Scissors",
     tag: "Twin pulse blades",
     color: "#ffc580",
     beats: "paper",
-    description: "Cuts through the veil",
+    description: "Scissors beat paper.",
   },
 ];
 export const STANCES = [
@@ -40,39 +41,39 @@ export const STANCES = [
 export const APEX_PROTOCOLS = [
   {
     id: "thermal",
-    name: "Thermal rupture",
+    name: "Overheating",
     detail:
-      "Every exchange adds 10 extra heat. Guard and coolant keep the frame stable.",
+      "Every turn adds 10 extra heat. Safe attacks, bracing, and coolant help you cool down.",
   },
   {
     id: "siphon",
-    name: "Siphon lattice",
+    name: "Life steal",
     detail:
-      "A losing exchange repairs 12 hostile integrity. Commit when the signal is strong.",
+      "The rival restores up to 12 health whenever it hits you.",
   },
   {
     id: "plating",
-    name: "Reactive plating",
+    name: "Armour",
     detail:
-      "Successful counters deal 20% less damage. Overdrive bypasses the plating.",
+      "Your attacks deal 20% less damage. Heavy attacks break through.",
   },
   {
     id: "redline",
-    name: "Redline core",
+    name: "Second wind",
     detail:
-      "At or below half integrity, this frame deals 30% more damage. Finish it decisively.",
+      "At half health or less, the rival deals 30% more damage.",
   },
   {
     id: "blackout",
-    name: "Signal blackout",
+    name: "Jammer",
     detail:
-      "Forecast accuracy is capped at 55%. Save your deep scan for a decisive strike.",
+      "Unreliable tells. Use a scan to see the rival’s next hand.",
   },
   {
     id: "mirror",
-    name: "Mirror protocol",
+    name: "Counterreader",
     detail:
-      "Its next signal always counters your previous weapon. Avoid repeating instincts.",
+      "The tell changes to counter your last hand. Mix up your choices.",
   },
 ];
 export const DISTRICTS = [
@@ -120,7 +121,7 @@ export const DISTRICTS = [
     zone: "Uplink 03",
     color: "#b2ec6e",
     modifier: "Feedback",
-    detail: "A draw restores 8 integrity.",
+    detail: "A draw restores 8 health.",
     cooling: 10,
     healTie: true,
   },
@@ -138,35 +139,35 @@ export const DISTRICTS = [
 export const UPGRADES = [
   {
     id: "power",
-    name: "Impact amplifier",
+    name: "Weapon upgrade",
     kind: "Offense",
-    detail: "+5 counter damage before protocol bonuses.",
+    detail: "+5 damage before attack bonuses.",
     icon: "power",
   },
   {
     id: "armor",
-    name: "Ceramic subdermal",
+    name: "Body armour",
     kind: "Defense",
     detail: "Reduce incoming damage by 3. Losing hits deal at least 2.",
     icon: "armor",
   },
   {
     id: "capacity",
-    name: "Second heart",
+    name: "More health",
     kind: "Survival",
-    detail: "+20 max integrity. Recover 35 integrity.",
+    detail: "+20 max health. Recover 35 health.",
     icon: "heart",
   },
   {
     id: "coolant",
-    name: "Cryo circulation",
+    name: "Better cooling",
     kind: "Thermal",
     detail: "Clear 6 extra heat every turn.",
     icon: "coolant",
   },
   {
     id: "battery",
-    name: "Flux capacitor",
+    name: "Bigger battery",
     kind: "Energy",
     detail: "Generate 6 more charge every turn.",
     icon: "battery",
@@ -191,7 +192,7 @@ export function levelFor(seed, level) {
     district.anomaly = anomaly;
     if (anomaly === "Compression") {
       district.amplify = 1.25;
-      district.detail += " Both frames deal 25% more damage.";
+      district.detail += " Both fighters deal 25% more damage.";
     }
     if (anomaly === "Signal bleed") {
       district.signalPenalty = 12;
@@ -215,7 +216,7 @@ export function levelFor(seed, level) {
     "Onyx",
     "Sable",
   ];
-  const frames = ["Ronin", "Specter", "Sentinel", "Revenant", "Warden"];
+  const fighters = ["Ronin", "Specter", "Sentinel", "Revenant", "Warden"];
   const boss = level % 5 === 0;
   const ability = boss
     ? APEX_PROTOCOLS[
@@ -230,7 +231,7 @@ export function levelFor(seed, level) {
     district,
     boss,
     ability,
-    name: `${names[Math.floor(rng() * names.length)]} ${frames[Math.floor(rng() * frames.length)]}`,
+    name: `${names[Math.floor(rng() * names.length)]} ${fighters[Math.floor(rng() * fighters.length)]}`,
     serial: `MK.${String(Math.floor(rng() * 899) + 100)}`,
     maxHp,
     hp: maxHp,
@@ -246,17 +247,21 @@ export function levelFor(seed, level) {
 export function newRun(
   seed = Math.floor(Math.random() * 2 ** 30),
   challenge = null,
+  character = "echo",
 ) {
+  const fighter = fighterFor(character);
   return {
     version: 1,
     seed,
     challenge,
+    character: fighter.id,
+    inventory: inventoryFor(fighter.id),
     level: 1,
     turn: 0,
     phase: "ready",
-    hp: 100,
-    maxHp: 100,
-    charge: 20,
+    hp: fighter.hp,
+    maxHp: fighter.hp,
+    charge: fighter.charge,
     heat: 0,
     credits: 0,
     combo: 0,
@@ -280,7 +285,12 @@ export function counterFor(id, reverse = false) {
 export function damageFor(run, outcome, stance = "strike") {
   const win = outcome === "win",
     tie = outcome === "draw";
-  const base = 23 + run.upgrades.power * 5 + Math.min(run.combo, 4) * 3;
+  if (!win) return 0;
+  const base =
+    23 +
+    fighterFor(run.character).power +
+    run.upgrades.power * 5 +
+    Math.min(run.combo, 4) * 3;
   return Math.max(
     1,
     Math.round(
@@ -319,7 +329,7 @@ export function resolveTurn(run, weaponId, stance = "strike") {
   const incoming = Math.max(
     win ? 0 : tie ? 0 : 2,
     Math.round(
-      (win ? 0 : tie ? 6 : enemy.damage) *
+      (win || tie ? 0 : enemy.damage) *
         (stance === "guard" ? 0.5 : 1) *
         (enemy.ability?.id === "redline" && enemy.hp <= enemy.maxHp / 2
           ? 1.3
@@ -399,6 +409,58 @@ export function resolveTurn(run, weaponId, stance = "strike") {
     result,
   };
 }
+// Looking at an opening never spends a turn, changes health, or rolls a new hand.
+// The same seeded exchange is committed only when its action is chosen.
+export function openingFor(run, weaponId) {
+  if (run.phase !== "ready" || !weaponFor(weaponId)) return null;
+  const next = resolveTurn(run, weaponId);
+  return {
+    playerWeapon: weaponId,
+    enemyWeapon: next.result.enemyWeapon,
+    outcome: next.result.outcome,
+    turn: run.turn,
+  };
+}
+export function itemAvailable(run, id) {
+  if (!ITEM_TYPES.some((i) => i.id === id) || !(run.inventory?.[id] > 0))
+    return false;
+  return id === "medkit"
+    ? run.hp < run.maxHp
+    : id === "coolant"
+      ? run.heat > 0
+      : run.charge < 100;
+}
+export function useEarnedItem(run, weaponId, id) {
+  if (openingFor(run, weaponId)?.outcome !== "win" || !itemAvailable(run, id))
+    return run;
+  const next = resolveTurn(run, weaponId);
+  const result = {
+    ...next.result,
+    damage: 0,
+    incoming: 0,
+    bounty: 0,
+    combo: 0,
+    item: id,
+    healing: id === "medkit" ? Math.min(35, run.maxHp - run.hp) : 0,
+  };
+  return {
+    ...next,
+    phase: "ready",
+    enemy: { ...next.enemy, hp: run.enemy.hp },
+    hp: Math.min(run.maxHp, run.hp + result.healing),
+    charge: id === "battery" ? Math.min(100, run.charge + 35) : run.charge,
+    heat: id === "coolant" ? Math.max(0, run.heat - 40) : run.heat,
+    combo: 0,
+    bestCombo: run.bestCombo,
+    credits: run.credits + 15,
+    inventory: { ...run.inventory, [id]: run.inventory[id] - 1 },
+    result,
+    history: [result, ...run.history].slice(0, 5),
+  };
+}
+export function floorSupply(run) {
+  return ITEM_TYPES[(run.seed + run.level) % ITEM_TYPES.length];
+}
 export function scanSignal(run) {
   if (run.phase !== "ready" || run.charge < 30 || run.scanned || run.scanUsed)
     return run;
@@ -432,12 +494,17 @@ export function repairFrame(run) {
 export function chooseUpgrade(run, id) {
   if (run.phase !== "upgrade" || !UPGRADES.some((u) => u.id === id)) return run;
   const maxHp = run.maxHp + (id === "capacity" ? 20 : 0);
+  const supply = floorSupply(run).id;
   return {
     ...run,
     upgrades: { ...run.upgrades, [id]: run.upgrades[id] + 1 },
     level: run.level + 1,
     phase: "ready",
     maxHp,
+    inventory: {
+      ...(run.inventory || inventoryFor(run.character)),
+      [supply]: Math.min(5, (run.inventory?.[supply] || 0) + 1),
+    },
     hp: Math.min(maxHp, run.hp + (id === "capacity" ? 35 : 20)),
     charge: Math.min(100, run.charge + 10),
     heat: Math.max(0, run.heat - 35),
@@ -471,7 +538,9 @@ export function loadSave(storage) {
       !["ready", "upgrade", "defeat"].includes(data.phase)
     )
       return null;
-    const base = newRun(data.seed),
+    if (data.character && !FIGHTERS.some((f) => f.id === data.character))
+      return null;
+    const base = newRun(data.seed, null, data.character),
       generated = levelFor(data.seed, data.level);
     if (
       ![
@@ -489,7 +558,7 @@ export function loadSave(storage) {
       return null;
     if (
       data.hp > data.maxHp ||
-      data.maxHp < 100 ||
+      data.maxHp < fighterFor(data.character).hp ||
       data.charge > 100 ||
       data.heat > 100 ||
       !data.enemy ||
@@ -524,9 +593,25 @@ export function loadSave(storage) {
       );
     if (data.result && !validResult(data.result)) return null;
     if (data.scanned && !weaponFor(data.scanned)) return null;
+    if (
+      data.inventory &&
+      !ITEM_TYPES.every(
+        (i) =>
+          Number.isInteger(data.inventory[i.id]) &&
+          data.inventory[i.id] >= 0 &&
+          data.inventory[i.id] <= 5,
+      )
+    )
+      return null;
     return {
       ...base,
       ...data,
+      character: base.character,
+      inventory: data.inventory
+        ? Object.fromEntries(
+            ITEM_TYPES.map((i) => [i.id, data.inventory[i.id]]),
+          )
+        : base.inventory,
       challenge:
         typeof data.challenge === "string" &&
         /^\d{4}-\d{2}-\d{2}$/.test(data.challenge)
