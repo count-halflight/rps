@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { createRiggedFighter } from "../src/components/riggedFighter.js";
 import { FIGHTERS } from "../src/game/fighters.js";
 import { attackPresentation, cinematicFrame } from "../src/game/cinematics.js";
@@ -12,16 +13,19 @@ test("all shipped human assets load, articulate, and retain finite bounds throug
     const bytes = await readFile(
       new URL(`../public/models/${name}-human.glb`, import.meta.url),
     );
-    const gltf = await new GLTFLoader().parseAsync(
+    const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parseAsync(
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
       "",
     );
     const fighter = createRiggedFighter(gltf, f.color, f.style);
+    fighter.model.traverse(o=>{
+      if(o.isSkinnedMesh)assert.ok(o.geometry.getAttribute('uv'),'compression preserves cloth UVs');
+    });
     const rest = fighter.hands[0].getWorldPosition(new THREE.Vector3());
-    const size = new THREE.Box3()
-      .setFromObject(fighter.root)
-      .getSize(new THREE.Vector3());
-    assert.ok(size.y > 2 && size.y < 3, "human fits the arena scale");
+    const anatomy = new THREE.Box3();
+    fighter.model.traverse(o=>{if(o.isSkinnedMesh)anatomy.union(new THREE.Box3().setFromObject(o));});
+    const size = anatomy.getSize(new THREE.Vector3());
+    assert.ok(size.y > 1.8 && size.y < 2.7, "anatomy fits the arena scale");
     for (const weapon of ["rock", "paper", "scissors"])
       for (const final of [false, true])
         for (let variant = 0; variant < 3; variant++) {
@@ -40,6 +44,10 @@ test("all shipped human assets load, articulate, and retain finite bounds throug
             fighter.root.updateMatrixWorld(true);
             const hand = fighter.hands[0].getWorldPosition(new THREE.Vector3());
             assert.ok(hand.toArray().every(Number.isFinite));
+            if(f.style==='archer'||f.style==='glaive'){
+              const grip=fighter.gripPoints();
+              assert.ok(grip.rightPalm.distanceTo(grip.shaft)<.025,`${f.id} ${weapon}: support hand stays on the weapon`);
+            }
           }
         }
     assert.ok(

@@ -1,0 +1,153 @@
+{
+  "main": {
+    "checks": [
+      "Fullscreen button enters real fullscreen and F returns to the window",
+      "Five live character previews select the correct fighter and fit desktop and mobile",
+      "Actual music output starts from Play (peak RMS 0.0610)",
+      "Mute silences the actual output and audio resumes",
+      "RPS awards an opening without damage; a chosen attack commits exactly one turn",
+      "Reloading an unspent opening resumes the same saved turn",
+      "Keyboard plays a hand and chooses the earned attack",
+      "Pause traps focus and restores controls",
+      "A medkit spends the opening, heals, and removes one item without attacking",
+      "All five fighters use their own weapon-specific attacks",
+      "All six districts finish a fight and grant the next upgrade and item",
+      "Defeat returns to character selection for a fresh run",
+      "Real phone touch plays the two-stage combat flow",
+      "Hand and attack controls fit 320px phones, tablets, landscape, and desktop",
+      "No browser exceptions or failed asset requests"
+    ],
+    "audio": {
+      "peak": 0.0610127570299939,
+      "state": "running"
+    },
+    "errors": [],
+    "requests": []
+  },
+  "productionWebGLFallback": {
+    "checks": [
+      "Touch combat works when WebGL is unavailable",
+      "normal door reaches the next fight with full health and usable phone controls",
+      "elite door reaches the next fight with full health and usable phone controls",
+      "rest door reaches the next fight with full health and usable phone controls",
+      "shop door reaches the next fight with full health and usable phone controls",
+      "event door reaches the next fight with full health and usable phone controls"
+    ],
+    "exceptions": [],
+    "requests": []
+  },
+  "bosses": {
+    "records": [
+      {
+        "name": "Morrow",
+        "level": 25,
+        "environment": "rain",
+        "phases": 2,
+        "intro": 5000
+      },
+      {
+        "name": "Varda",
+        "level": 20,
+        "environment": "foundry",
+        "phases": 2,
+        "intro": 5000
+      },
+      {
+        "name": "Irid",
+        "level": 15,
+        "environment": "vault",
+        "phases": 2,
+        "intro": 5000
+      },
+      {
+        "name": "Vesra",
+        "level": 10,
+        "environment": "market",
+        "phases": 2,
+        "intro": 5000
+      },
+      {
+        "name": "Senn",
+        "level": 5,
+        "environment": "garden",
+        "phases": 2,
+        "intro": 5000
+      },
+      {
+        "name": "Orven",
+        "level": 30,
+        "environment": "docks",
+        "phases": 2,
+        "intro": 5000
+      }
+    ],
+    "errors": [],
+    "requests": []
+  },
+  "productionTutorialAndPlayerFinishers": {
+    "checks": [
+      "Touch tutorial teaches counters, earned attacks, and a boss without replacing the campaign",
+      "Calculus controls change concepts and Riemann slices on a phone",
+      "Echo / rock: damage stays hidden until the final impact",
+      "Echo / paper: damage stays hidden until the final impact",
+      "Echo / scissors: damage stays hidden until the final impact",
+      "Cinder / rock: damage stays hidden until the final impact",
+      "Cinder / paper: damage stays hidden until the final impact",
+      "Cinder / scissors: damage stays hidden until the final impact",
+      "Nyx / rock: damage stays hidden until the final impact",
+      "Nyx / paper: damage stays hidden until the final impact",
+      "Nyx / scissors: damage stays hidden until the final impact",
+      "Vex / rock: damage stays hidden until the final impact",
+      "Vex / paper: damage stays hidden until the final impact",
+      "Vex / scissors: damage stays hidden until the final impact",
+      "Kuro / rock: damage stays hidden until the final impact",
+      "Kuro / paper: damage stays hidden until the final impact",
+      "Kuro / scissors: damage stays hidden until the final impact"
+    ],
+    "errors": [],
+    "requests": []
+  },
+  "productionOffline": {
+    "checks": [
+      "All five fighter assets are cached",
+      "Entry page, fonts, scripts, arena, and fighters load offline",
+      "Original music plays offline; mute and resume change the measured output",
+      "Real fullscreen enters and exits in the production build",
+      "Earned attacks and saving work offline"
+    ],
+    "audio": {
+      "peak": 0.03473233805281533,
+      "state": "running"
+    },
+    "cachedAssets": [
+      "/rps/",
+      "/rps/index.html",
+      "/rps/favicon.svg",
+      "/rps/manifest.webmanifest",
+      "/rps/icons/trinity-192.png",
+      "/rps/icons/trinity-512.png",
+      "/rps/art/afterlight-cover.png",
+      "/rps/models/echo-human.glb",
+      "/rps/models/ronin-human.glb",
+      "/rps/models/brawler-human.glb",
+      "/rps/models/nyx-human.glb",
+      "/rps/models/vex-human.glb",
+      "/rps/assets/barlow-condensed-latin-700-normal-v1xN8_Wq.woff2",
+      "/rps/assets/barlow-condensed-latin-600-normal-BFJEwTuo.woff",
+      "/rps/assets/barlow-condensed-latin-700-normal-Dmwat-ge.woff",
+      "/rps/assets/anton-latin-400-normal-AUNGEG_V.woff",
+      "/rps/assets/chakra-petch-latin-700-normal-D1s_c2du.woff",
+      "/rps/assets/barlow-condensed-latin-500-normal-HIEiP5Ov.woff",
+      "/rps/assets/index-7mGfb9lx.css",
+      "/rps/assets/graphics-lCHKsqzT.js",
+      "/rps/assets/react-D-vXKkXw.js",
+      "/rps/assets/index-BToJteA4.js",
+      "/rps/assets/Arena-BqUxurSt.js",
+      "/rps/assets/chakra-petch-latin-700-normal-CnDBPjkL.woff2",
+      "/rps/assets/barlow-condensed-latin-500-normal-BgYH2mbd.woff2",
+      "/rps/assets/anton-latin-400-normal-Byf51wtH.woff2",
+      "/rps/assets/barlow-condensed-latin-600-normal-DepVgxBB.woff2"
+    ],
+    "exceptions": []
+  }
+}

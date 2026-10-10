@@ -83,7 +83,7 @@ test("floor victory awards bounty and installing an augment advances and heals",
   assert.equal(next.level, 2);
   assert.equal(next.phase, "ready");
   assert.equal(next.maxHp, 120);
-  assert.equal(next.hp, 85);
+  assert.equal(next.hp, 120);
   assert.equal(next.upgrades.capacity, 1);
   assert.equal(next.enemy.hp, next.enemy.maxHp);
   assert.equal(upgradeChoices(victory).length, 3);

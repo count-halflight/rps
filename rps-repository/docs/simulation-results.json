@@ -1,0 +1,37 @@
+{
+  "runsPerPolicy": 1000,
+  "maxFloor": 40,
+  "softlocks": 0,
+  "policies": {
+    "random": {
+      "meanFloor": 3.771,
+      "medianFloor": 3,
+      "reach5": 0.32,
+      "reach10": 0.02,
+      "reach20": 0.001,
+      "completed": 0,
+      "rooms": 1306,
+      "bosses": 103
+    },
+    "tactical": {
+      "meanFloor": 34.449,
+      "medianFloor": 41,
+      "reach5": 0.999,
+      "reach10": 0.992,
+      "reach20": 0.795,
+      "completed": 0.782,
+      "rooms": 16379,
+      "bosses": 6520
+    },
+    "perfect": {
+      "meanFloor": 41,
+      "medianFloor": 41,
+      "reach5": 1,
+      "reach10": 1,
+      "reach20": 1,
+      "completed": 1,
+      "rooms": 19485,
+      "bosses": 8000
+    }
+  }
+}

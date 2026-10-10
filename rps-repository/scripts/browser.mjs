@@ -21,6 +21,7 @@ export async function launchBrowser() {
       "about:blank",
     ],
     {
+      detached: true,
       env: {
         ...process.env,
         XDG_CONFIG_HOME: join(profile, "config"),
@@ -60,7 +61,7 @@ export async function launchBrowser() {
     if (!target) await delay(100);
   }
   if (!target) {
-    browser.kill("SIGTERM");
+    process.kill(-browser.pid, "SIGTERM");
     throw new Error("Browser did not open a page");
   }
   const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -150,7 +151,7 @@ export async function launchBrowser() {
   };
   const boundsFor = (selector) =>
     evaluate(
-      `(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw new Error('Missing button');e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`,
+      `(async()=>{await document.fonts.ready;const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw new Error('Missing button');e.scrollIntoView({block:'center',behavior:'instant'});const r=e.getBoundingClientRect();const x=r.x+r.width/2,y=r.y+r.height/2;if(!e.contains(document.elementFromPoint(x,y)))throw new Error('Button is covered: '+${JSON.stringify(selector)});return {x,y};})()`,
     );
   const click = async (selector) => {
     const bounds = await boundsFor(selector);
@@ -192,7 +193,9 @@ export async function launchBrowser() {
   const close = async () => {
     await call("Browser.close").catch(() => {});
     ws.close();
-    browser.kill("SIGTERM");
+    try { process.kill(-browser.pid, "SIGTERM"); } catch (error) {
+      if (error.code !== "ESRCH") throw error;
+    }
     await delay(100);
     await rm(profile, {
       recursive: true,

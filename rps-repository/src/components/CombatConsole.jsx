@@ -16,7 +16,10 @@ import {
   scanSignal,
   damageFor,
   itemAvailable,
+  abilityDetail,
 } from "../game/engine";
+import { perkTotals } from "../game/perks.js";
+import { signatureWarning } from "../game/rivals.js";
 import { fighterFor, ITEM_TYPES, MOVE_STANCES } from "../game/fighters";
 import { playTone } from "../game/audio";
 import WeaponIcon from "./WeaponIcon";
@@ -60,6 +63,7 @@ export default function CombatConsole({
       ? weaponFor(run.scanned)
       : WEAPONS[run.enemy.signal],
     disabled = busy || run.phase !== "ready" || !!modal;
+  const perks=perkTotals(run),scanCost=Math.max(0,30-(perks.scanDiscount||0));
   const earned = pending?.stage === "action",
     fighter = fighterFor(run.character),
     hand = pending?.playerWeapon || weapon;
@@ -69,6 +73,7 @@ export default function CombatConsole({
       className={`combat-console ${earned ? "action-ready" : ""} ${open ? "tactics-open" : ""}`}
       aria-label="Combat controls"
     >
+      {signatureWarning(run)&&<div className="signature-warning" role="status">{run.enemy.rival.name} is readying {run.enemy.rival.signature}. Win the hand to stop it.</div>}
       <div className="combat-read">
         <span>
           {earned
@@ -84,10 +89,10 @@ export default function CombatConsole({
                     : "Tap rock, paper or scissors"}
         </span>
         <div className="enemy-tell">
-          <span>Rival’s tell</span>
+          <span title={run.enemy.rival.personalityInfo.detail}>{run.enemy.rival.personalityInfo.name}</span>
           <WeaponIcon type={intent.id} size={20} />
           <b>{intent.type}</b>
-          <small>{run.scanned ? "Certain" : `${run.enemy.confidence}%`}</small>
+          <small>{run.scanned ? "Certain" : `${Math.min(100,run.enemy.confidence+(perks.tellBoost||0))}%`}</small>
         </div>
       </div>
       {earned ? (
@@ -240,7 +245,7 @@ export default function CombatConsole({
           <div className="utility-row">
             <button
               disabled={
-                disabled || run.charge < 30 || run.scanned || run.scanUsed
+                disabled || run.charge < scanCost || run.scanned || run.scanUsed
               }
               onClick={() => {
                 setRun((r) => scanSignal(r));
@@ -249,13 +254,13 @@ export default function CombatConsole({
             >
               <Crosshair size={16} />
               {run.scanUsed ? "Scan used" : "Read hand"}
-              <small>30 charge · once per floor</small>
+              <small>{scanCost} charge · once per floor</small>
             </button>
             <button onClick={onGuide}>Rules</button>
           </div>
           {run.enemy.ability && (
             <p className="apex-warning">
-              <b>{run.enemy.ability.name}</b> {run.enemy.ability.detail}
+              <b>{run.enemy.ability.name}</b> {abilityDetail(run.enemy)}
             </p>
           )}
           <CalculusLab run={run} stance={stance} />

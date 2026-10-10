@@ -1,19 +1,24 @@
+import { perkTotals } from './perks.js';
 export const clampResource = (value) => Math.max(0, Math.min(100, value));
-export function resourceRates(run, stance) {
+export function resourceRates(run, stance, outcome='win') {
+  const p=perkTotals(run);
   return {
     heat:
       (stance === "overdrive" ? 38 : stance === "guard" ? 4 : 14) +
-      (run.enemy.ability?.id === "thermal" ? 10 : 0) -
+      (run.enemy.ability?.id === "thermal" ? 10+(run.enemy.boss?(run.enemy.hp<=run.enemy.maxHp*.30?12:run.enemy.hp<=run.enemy.maxHp*.65?6:0):0) : 0) -
       run.enemy.district.cooling -
-      run.upgrades.coolant * 6,
+      run.upgrades.coolant * 6 - (p.cooling||0) - (run.heat>70?p.hotCooling||0:0) -
+      (stance==='overdrive'?p.heavyCooling||0:0) - (outcome==='win'?p.winCooling||0:0),
     charge:
       (stance === "overdrive" ? -40 : stance === "guard" ? 22 : 14) +
       run.upgrades.battery * 6 +
-      (run.enemy.district.chargeBonus || 0),
+      (run.enemy.district.chargeBonus || 0) + (p.charge||0) +
+      (run.heat>50?p.warmCharge||0:0) + (stance==='guard'?p.guardCharge||0:stance==='strike'?p.quickCharge||0:0) +
+      (outcome==='draw'?p.drawCharge||0:outcome==='loss'?p.lossCharge||0:0),
   };
 }
-export function resourceProjection(run, stance, time = 1) {
-  const rates = resourceRates(run, stance);
+export function resourceProjection(run, stance, time = 1, outcome='win') {
+  const rates = resourceRates(run, stance,outcome);
   return {
     heat: clampResource(run.heat + rates.heat * time),
     charge: clampResource(run.charge + rates.charge * time),

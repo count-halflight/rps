@@ -1,6 +1,6 @@
-import React, { Suspense, lazy, useState, useEffect } from "react";
+import React, { Suspense, lazy, useState, useEffect, useLayoutEffect } from "react";
 import { weaponFor } from "../game/engine";
-import { ATTACKS } from "../game/cinematics";
+import { PERKS } from "../game/perks.js";
 import { fighterFor, rivalFighter } from "../game/fighters";
 import WeaponIcon from "./WeaponIcon";
 import { IntegralGraph } from "./CalculusLab";
@@ -15,27 +15,34 @@ export default function BattleStage({
   dossier,
   preferences,
   finish,
+  entrance,
+  onReady,
 }) {
   const [ready, setReady] = useState(false),
     [revealed, setRevealed] = useState(false),
     [hands, setHands] = useState(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     setRevealed(false);
     setHands(false);
     if (!busy || !animation) return;
+    const elapsed=Math.max(0,performance.now()-(animation.startedAt??performance.now()));
     const one = setTimeout(
         () => setHands(true),
-        animation.duration * animation.revealAt,
+        Math.max(0,animation.duration * animation.revealAt-elapsed),
       ),
       two = setTimeout(
         () => setRevealed(true),
-        animation.duration * animation.impactAt,
+        Math.max(0,animation.duration * animation.impactAt-elapsed),
       );
     return () => {
       clearTimeout(one);
       clearTimeout(two);
     };
   }, [animation?.id, busy]);
+  const playerHp=busy&&revealed?Math.min(run.maxHp,Math.max(0,run.hp-(animation?.incoming||0)+(animation?.healing||0))):run.hp;
+  const enemyHp=busy&&revealed?Math.min(run.enemy.maxHp,Math.max(0,run.enemy.hp-(animation?.damage||0)+(animation?.enemyHealing||0))):run.enemy.hp;
+  const [ghost,setGhost]=useState({hp:run.hp,enemy:run.enemy.hp});
+  useEffect(()=>{const t=setTimeout(()=>setGhost({hp:playerHp,enemy:enemyHp}),650);return()=>clearTimeout(t);},[playerHp,enemyHp,run.level]);
   const district = run.enemy.district;
   const attacking =
     animation?.outcome === "loss"
@@ -50,18 +57,22 @@ export default function BattleStage({
         <Arena
           character={run.character}
           enemyCharacter={
-            dossier.name === "Cinder" ? "cinder" : rivalFighter(run.level).id
+            run.enemy.rival.character
           }
           weapon={weapon}
           animation={animation}
           district={district}
-          paused={paused}
+          paused={paused || run.phase==='route' || run.phase==='room'}
           enemyLevel={run.level}
           quality={preferences.quality}
           reducedMotion={preferences.motion === "reduced"}
           frameFinish={finish}
           phase={run.phase}
-          onReady={() => setReady(true)}
+          enemyAppearance={run.enemy.rival}
+          bossPhase={run.enemy.boss?run.enemy.hp<=run.enemy.maxHp*.30?2:run.enemy.hp<=run.enemy.maxHp*.65?1:0:0}
+          entrance={entrance}
+          reveal={pending?.stage==='reveal'?pending:null}
+          onReady={() => {setReady(true);onReady?.();}}
         />
       </Suspense>
       <div className="film-shade" />
@@ -72,33 +83,35 @@ export default function BattleStage({
             <span>You</span>
           </div>
           <div className="life-bar">
-            <i style={{ width: `${(run.hp / run.maxHp) * 100}%` }} />
+            <i className="ghost-hp" style={{width:`${Math.max(playerHp,ghost.hp)/run.maxHp*100}%`}}/>
+            <i style={{ width: `${(playerHp / run.maxHp) * 100}%` }} />
           </div>
           <small>
-            {run.hp} / {run.maxHp}
+            {playerHp} / {run.maxHp}
           </small>
         </div>
         <div className="round-mark">
-          <span>{run.enemy.boss ? "Boss" : "Floor"}</span>
+          <span>{run.enemy.boss ? "Boss" : run.enemy.elite ? "Elite" : "Floor"}</span>
           <b>{String(run.level).padStart(2, "0")}</b>
-          <small>{run.turn + 1}</small>
+          <small>{(run.fightTurn??run.turn) + 1}</small>
         </div>
         <div className="health-side rival">
           <div className="fighter-name">
             <b title={dossier.name}>{dossier.name.split(" ")[0]}</b>
             <span>
-              {dossier.name === "Cinder"
-                ? "Impact wraps"
-                : rivalFighter(run.level).weapon}
+              {run.enemy.rival.weapon || fighterFor(run.enemy.rival.character).weapon}
             </span>
           </div>
-          <div className="life-bar">
+          <div className={`life-bar ${run.enemy.boss?'boss-life':run.enemy.elite?'elite-life':''}`}>
+            <i className="ghost-hp" style={{width:`${Math.max(enemyHp,ghost.enemy)/run.enemy.maxHp*100}%`}}/>
+            {run.enemy.boss&&<><span className="phase-marker" style={{left:'65%'}}/><span className="phase-marker" style={{left:'30%'}}/></>}
+            {run.enemy.elite&&<span className="phase-marker" style={{left:'50%'}}/>}
             <i
-              style={{ width: `${(run.enemy.hp / run.enemy.maxHp) * 100}%` }}
+              style={{ width: `${(enemyHp / run.enemy.maxHp) * 100}%` }}
             />
           </div>
           <small>
-            {run.enemy.hp} / {run.enemy.maxHp}
+            {enemyHp} / {run.enemy.maxHp}
           </small>
         </div>
       </div>
@@ -116,6 +129,7 @@ export default function BattleStage({
           <span>hit streak</span>
         </div>
       )}
+      {Object.keys(run.perks||{}).length>0&&<div className="perk-loadout" aria-label="Equipped perks">{Object.entries(run.perks).slice(0,6).map(([id,count])=><span key={id} title={PERKS.find(p=>p.id===id)?.detail}>{PERKS.find(p=>p.id===id)?.name}{count>1?` ×${count}`:''}</span>)}{Object.keys(run.perks).length>6&&<span>+{Object.keys(run.perks).length-6} perks</span>}</div>}
       {!ready && <div className="scene-loading">Opening the ring…</div>}
       {pending?.stage === "reveal" && (
         <div
@@ -204,7 +218,7 @@ export default function BattleStage({
               )}
             </div>
             {hands &&
-              (attacking === "paper" || animation.style === "mage") &&
+              attacking === "paper" && animation.style === "mage" &&
               animation.outcome !== "draw" && (
                 <div className="cinematic-integral">
                   <IntegralGraph

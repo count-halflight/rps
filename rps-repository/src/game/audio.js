@@ -285,7 +285,7 @@ export function setAmbience(enabled, level = 1) {
       : 0;
     const quiet =
       anticipation && now >= anticipation.quiet && now < anticipation.impact;
-    const intensity = Math.min(1.4, battleMix.intensity + build * 0.6),
+    const intensity = Math.min(1.4, battleMix.intensity + build * 0.6 + bossLayer*.09),
       bpm = 108 + battleMix.intensity * 34 + build * 48;
     const tick = 60 / bpm / 2;
     if (context.state === "running" && !quiet) {
@@ -327,6 +327,7 @@ export function setAmbience(enabled, level = 1) {
         );
       }
       if (build > 0.2) noise(now, 0.04, 0.035 + build * 0.07, 2200, filter);
+      if(bossLayer&&step%4===0){note(base/2,now,.4,.08,'triangle',filter);noise(now,.08,.04+bossLayer*.015,700,filter);}
       step++;
     }
     musicTimer = setTimeout(pulse, tick * 1000);
@@ -347,4 +348,33 @@ export function setAmbience(enabled, level = 1) {
   };
   pulse();
   heartbeat();
+}
+
+let bossLayer=0;
+export function setBossAudio(phase=0){bossLayer=Math.max(0,Math.min(3,phase));}
+// Original weapon voices: attack timings come from the same authored timeline
+// as pose/camera. Each recipe layers a transient, body and pitched tail.
+export function playChoreography(a,enabled){
+ if(!enabled)return;
+ try{
+  audioContext();const start=context.currentTime,impact=start+a.duration*a.impactAt/1000;
+  const recipe=a.vfx||'',hash=[...recipe].reduce((n,c)=>n+c.charCodeAt(0),0);
+  const pitch=1+(hash%13-6)*.018,style=a.style;
+  noise(start+.05,.14,.045,style==='brawler'?350:1300);
+  note((style==='mage'?260:style==='archer'?160:92)*pitch,start+.12,.30,.03,'triangle');
+  const travel=start+a.duration*.30/1000;
+  noise(travel,.22,.06,style==='glaive'?900:1900);
+  noise(impact,a.finisher?.35:.16,a.finisher?.24:.13,style==='blades'?2400:style==='archer'?3200:450);
+  note((style==='mage'?196:style==='archer'?390:style==='blades'?180:58)*pitch,impact,a.finisher?.65:.25,.10,style==='mage'?'sine':'triangle');
+  if(style==='blades'||style==='glaive')note(720*pitch,impact+.015,.13,.04,'triangle');
+  if(a.finisher)kick(impact,master,.36);
+ }catch{}
+}
+
+export function playStinger(rival,enabled){
+ if(!enabled)return;try{audioContext();const now=context.currentTime,root=[82.4,65.4,110,98,73.4,61.7][rival.district||0];
+ const intervals=rival.boss?[0,7,3,12]:rival.elite?[0,3,10]:[0,7];
+ intervals.forEach((n,i)=>note(root*Math.pow(2,n/12),now+i*.11,rival.boss?.65:.3,.08,'triangle'));
+ if(rival.boss)noise(now+.1,.4,.08,500);else if(rival.elite)kick(now,master,.18);
+ }catch{}
 }

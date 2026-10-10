@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { launchBrowser, delay } from "./browser.mjs";
-import { newRun, resolveTurn } from "../src/game/engine.js";
+import { newRun, resolveTurn, levelFor } from "../src/game/engine.js";
 import { FIGHTERS } from "../src/game/fighters.js";
 import { attackPresentation } from "../src/game/cinematics.js";
 const b = await launchBrowser(),
   checks = [],
   url = process.env.TEST_URL || "http://127.0.0.1:5173/";
+const lossOnly=process.env.TRAINING_CASE==='loss';
 const check = (n) => {
     checks.push(n);
     console.log("PASS", n);
@@ -14,6 +15,7 @@ const check = (n) => {
   read = () =>
     b.evaluate("JSON.parse(localStorage.getItem('trinity-save-v1'))");
 const fixture = async (run) => {
+  run.encounterSeen=true;
   await b.evaluate(
     `localStorage.setItem('trinity-save-v1',${JSON.stringify(JSON.stringify(run))});localStorage.setItem('trinity-preferences-v1',JSON.stringify({quality:'low',motion:'system',liveDossiers:false}));`,
   );
@@ -38,6 +40,8 @@ try {
     maxTouchPoints: 5,
   });
   await b.navigate(url);
+  await b.waitFor("document.querySelector('.start-button')");
+  if(!lossOnly){
   const saved = newRun(421);
   saved.hp = 20;
   saved.charge = 66;
@@ -110,8 +114,8 @@ try {
   check("Calculus controls change concepts and Riemann slices on a phone");
   await b.call("Emulation.setTouchEmulationEnabled", { enabled: false });
   await b.call("Emulation.setDeviceMetricsOverride", {
-    width: 1200,
-    height: 800,
+    width: 960,
+    height: 640,
     deviceScaleFactor: 1,
     mobile: false,
   });
@@ -143,7 +147,7 @@ try {
         attackPresentation(weapon, true, false, 0, f.id).title,
       );
       assert.ok(reveal.time >= 3300, `early reveal ${reveal.time} ms`);
-      if (weapon === "paper" || f.id === "nyx") assert.equal(reveal.slices, 24);
+      assert.equal(reveal.slices, weapon === "paper" && f.id === "nyx" ? 24 : 0);
       if (weapon === "paper")
         await b.screenshot(`artifacts/finisher-${f.id}.png`);
       await b.waitFor("document.querySelector('.upgrade-modal')");
@@ -152,14 +156,17 @@ try {
         `${f.name} / ${weapon}: damage stays hidden until the final impact`,
       );
     }
-  const loss = newRun(0);
+  }
+  const loss = newRun(Array.from({length:100},(_,i)=>i).find(seed=>levelFor(seed,4).rival.character==='nyx'));
+  loss.level = 4;
+  loss.enemy = levelFor(loss.seed, loss.level);
   loss.hp = 1;
   loss.enemy.signal = 1;
   loss.enemy.confidence = 100;
   await fixture(loss);
   await b.click(".start-button");
-  await b.waitFor("document.querySelector('.weapon-card')");
-  await b.click(".weapon-card");
+  await b.waitFor("document.querySelector('.game-surface .three-arena')?.dataset.frameAsset==='loaded'",30000);
+  await b.click(".weapon-card:nth-child(1)");
   await b.waitFor("document.querySelector('.cinematic-overlay.is-finisher')");
   await b.waitFor("document.querySelector('.cinematic-integral .integral-graph')");
   assert.equal(
@@ -186,7 +193,7 @@ try {
   assert.equal(b.errors.length, 0, JSON.stringify(b.errors));
   assert.equal(b.requests.length, 0, JSON.stringify(b.requests));
   await writeFile(
-    "artifacts/training-smoke.json",
+    lossOnly?"artifacts/losing-finisher-smoke.json":"artifacts/training-smoke.json",
     JSON.stringify({ checks, errors: b.errors, requests: b.requests }, null, 2),
   );
 } catch (error) {

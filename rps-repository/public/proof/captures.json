@@ -1,0 +1,1447 @@
+{
+  "sequences": 60,
+  "totalFrames": 240,
+  "method": "Real hand and attack controls; the development-only presentation clock stepped to four fixed beats.",
+  "captures": [
+    {
+      "id": "echo.rock.0",
+      "title": "Pommel strike",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.53
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.rock.1",
+      "title": "Low sweep",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.59
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.rock.2",
+      "title": "Crosscut",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.61
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.rock.final",
+      "title": "Bladebreaker",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.64
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.paper.0",
+      "title": "Blade feint",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.51
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.paper.1",
+      "title": "Mirror step",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.57
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.paper.2",
+      "title": "Blade storm",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.63
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.paper.final",
+      "title": "Mirror blades",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.66
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.scissors.0",
+      "title": "Quick draw",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.5
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.scissors.1",
+      "title": "Rising cut",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.58
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.scissors.2",
+      "title": "Thousand cuts",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.65
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "echo.scissors.final",
+      "title": "Thousand cuts",
+      "character": "echo",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.68
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "echo.png"
+    },
+    {
+      "id": "cinder.rock.0",
+      "title": "Straight punch",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.52
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.rock.1",
+      "title": "Body blow",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.57
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.rock.2",
+      "title": "Furnace fall",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.64
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.rock.final",
+      "title": "Crater",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.65
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.paper.0",
+      "title": "Palm strike",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.54
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.paper.1",
+      "title": "Shoulder check",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.6
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.paper.2",
+      "title": "Groundbreak",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.65
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.paper.final",
+      "title": "Discharge",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.67
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.scissors.0",
+      "title": "Hook",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.55
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.scissors.1",
+      "title": "Uppercut",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.62
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.scissors.2",
+      "title": "Three-hit rush",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.66
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "cinder.scissors.final",
+      "title": "Furnace fall",
+      "character": "cinder",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.7
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "cinder.png"
+    },
+    {
+      "id": "nyx.rock.0",
+      "title": "Prism bolt",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.55
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.rock.1",
+      "title": "Crystal trap",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.59
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.rock.2",
+      "title": "Shatter",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.65
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.rock.final",
+      "title": "Shatter",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.66
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.paper.0",
+      "title": "Light wave",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.56
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.paper.1",
+      "title": "Integral bloom",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.62
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.paper.2",
+      "title": "Singularity",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.68
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.paper.final",
+      "title": "Integral collapse",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.69
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.scissors.0",
+      "title": "Split beam",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.53
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.scissors.1",
+      "title": "Orbit cast",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.6
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.scissors.2",
+      "title": "Zero horizon",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.66
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "nyx.scissors.final",
+      "title": "Singularity",
+      "character": "nyx",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.72
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "nyx.png"
+    },
+    {
+      "id": "vex.rock.0",
+      "title": "Heavy arrow",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.57
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.rock.1",
+      "title": "Piercing shot",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.63
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.rock.2",
+      "title": "Meteor rain",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.68
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.rock.final",
+      "title": "Meteor rain",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.68
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.paper.0",
+      "title": "Volley",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.55
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.paper.1",
+      "title": "Ricochet",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.62
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.paper.2",
+      "title": "Scattershot",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.67
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.paper.final",
+      "title": "Sky pin",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.7
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.scissors.0",
+      "title": "Quick shot",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.51
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.scissors.1",
+      "title": "Backflip shot",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.61
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.scissors.2",
+      "title": "Starfall",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.7
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "vex.scissors.final",
+      "title": "Starfall",
+      "character": "vex",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.73
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "vex.png"
+    },
+    {
+      "id": "kuro.rock.0",
+      "title": "Thrust",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.54
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.rock.1",
+      "title": "Vault strike",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.61
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.rock.2",
+      "title": "Sky splitter",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.67
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.rock.final",
+      "title": "Storm hammer",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.67
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.paper.0",
+      "title": "Low sweep",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.57
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.paper.1",
+      "title": "Turning tide",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.63
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.paper.2",
+      "title": "Storm wheel",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.69
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.paper.final",
+      "title": "Tempest",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.71
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.scissors.0",
+      "title": "Cleaving cut",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.56
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.scissors.1",
+      "title": "Rising slash",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.65
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.scissors.2",
+      "title": "Heaven’s gate",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.71
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    },
+    {
+      "id": "kuro.scissors.final",
+      "title": "Heaven’s gate",
+      "character": "kuro",
+      "frames": [
+        {
+          "label": "anticipation",
+          "progress": 0.13
+        },
+        {
+          "label": "travel",
+          "progress": 0.3
+        },
+        {
+          "label": "impact",
+          "progress": 0.75
+        },
+        {
+          "label": "recovery",
+          "progress": 0.88
+        }
+      ],
+      "sheet": "kuro.png"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ const check = (n) => {
 const read = () =>
   b.evaluate("JSON.parse(localStorage.getItem('trinity-save-v1'))");
 async function fixture(run, touch = false) {
+  run.encounterSeen=true;
   await b.evaluate(
     `localStorage.setItem('trinity-save-v1',${JSON.stringify(JSON.stringify(run))});localStorage.setItem('trinity-preferences-v1',JSON.stringify({quality:'low',motion:'reduced',liveDossiers:false}));`,
   );
@@ -64,6 +65,7 @@ try {
     mobile: false,
   });
   await b.navigate(url);
+  await b.waitFor("document.querySelector('.start-button')");
   await b.evaluate(
     "localStorage.clear();localStorage.setItem('trinity-preferences-v1',JSON.stringify({quality:'low',motion:'reduced',liveDossiers:false}));",
   );
@@ -109,6 +111,8 @@ try {
   await b.screenshot("artifacts/character-selection.png");
   await b.click(".fighter-choice:nth-child(3)");
   await b.click(".fighter-confirm");
+  await b.waitFor("document.querySelector('.encounter-intro button') || document.querySelector('.weapon-card:not(:disabled)')");
+  if(await b.evaluate("!!document.querySelector('.encounter-intro button')"))await b.click(".encounter-intro button");
   await b.waitFor(
     "document.querySelector('.game-surface .three-arena')?.dataset.frameAsset==='loaded'",
     30000,
@@ -245,9 +249,12 @@ try {
     await b.click(".attack-card");
     await b.waitFor("document.querySelector('.upgrade-grid button')");
     await b.click(".upgrade-grid button");
+    await b.waitFor("document.querySelector('.route-normal')");
+    await b.click(".route-normal");
     await b.waitFor(
       `JSON.parse(localStorage.getItem('trinity-save-v1')).level===${level + 1}`,
     );
+    assert.equal((await read()).hp, (await read()).maxHp);
   }
   check("All six districts finish a fight and grant the next upgrade and item");
   const dead = newRun(12);
@@ -262,6 +269,8 @@ try {
   await b.click('[aria-label="You fell"] .primary-button');
   await b.waitFor("document.querySelector('.character-select')");
   await b.click(".fighter-confirm");
+  await b.waitFor("document.querySelector('.encounter-intro button') || document.querySelector('.weapon-card:not(:disabled)')");
+  if(await b.evaluate("!!document.querySelector('.encounter-intro button')"))await b.click(".encounter-intro button");
   await b.waitFor(
     "document.querySelector('.game-surface .three-arena')?.dataset.frameAsset==='loaded'",
     30000,

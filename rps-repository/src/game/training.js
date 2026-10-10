@@ -1,4 +1,5 @@
-import { newRun, levelFor } from "./engine.js";
+import { newRun, levelFor, APEX_PROTOCOLS } from "./engine.js";
+import { fighterFor } from './fighters.js';
 
 export const TRAINING_LESSONS = [
   {
@@ -69,6 +70,9 @@ function tutorialBoss(run) {
     enemy: {
       ...levelFor(0, 5),
       name: "Cinder",
+      rival: {...fighterFor('cinder'),character:'cinder',personality:'methodical',personalityInfo:{name:'Training boss',reliability:100,weights:[1,1,1]},scale:1,training:true},
+      ability: APEX_PROTOCOLS.find(a=>a.id==='thermal'),
+      district: levelFor(0,2).district,
       maxHp: 90,
       hp: 90,
       signal: 2,

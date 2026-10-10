@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { writeFile, readFile } from "node:fs/promises";
+import { writeFile, readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const publicFiles = [
@@ -26,9 +26,11 @@ export default function offlinePlugin() {
       base = config.base;
     },
     async writeBundle(_, bundle) {
+      const models=(await readdir(resolve(outputDir,"models"))).filter(f=>f.endsWith(".glb")).map(f=>`/models/${f}`);
       const files = [
         ...new Set([
           ...publicFiles,
+          ...models,
           ...Object.keys(bundle).map((name) => `/${name}`),
         ]),
       ];

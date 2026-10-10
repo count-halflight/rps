@@ -180,3 +180,16 @@ Self-hosted via Fontsource. SIL Open Font License 1.1.
 See Anton-OFL.txt and Barlow-Condensed-OFL.txt.
 
 Title artwork was generated for Trinity: afterlight.
+
+MakeHuman morph targets
+Copyright (c) MakeHuman Community and original author Manuel Bastioni.
+CC0 1.0 Universal. Source target files retain their original notices.
+https://github.com/makehumancommunity/makehuman/tree/master/makehuman/data/targets
+
+meshoptimizer / gltfpack build tool
+Copyright (c) 2016-2026 Arseny Kapoulkine. MIT licensed.
+Used only to package models. Three.js provides the runtime Meshopt decoder.
+https://github.com/zeux/meshoptimizer
+
+Rival costumes, boss assemblies, arena dressing, material maps, animation
+tracks and synthesized music are original work for Trinity: afterlight.

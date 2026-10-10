@@ -35,11 +35,14 @@ test("all five characters retain their starting stats and inventory through savi
     assert.equal(r.charge, f.charge);
     assert.deepEqual(loadSave({ getItem: () => JSON.stringify(r) }), r);
     r.enemy.hp = 1;
+    r.hp = 1;
     const victory = resolveTurn(r, "rock"),
       supply = floorSupply(victory).id;
     const next = chooseUpgrade(victory, "capacity");
     assert.equal(next.character, f.id);
     assert.equal(next.maxHp, f.hp + 20);
+    assert.equal(next.hp, next.maxHp);
+    assert.equal(chooseUpgrade(victory, "power").hp, f.hp);
     assert.equal(next.inventory[supply], r.inventory[supply] + 1);
   }
 });

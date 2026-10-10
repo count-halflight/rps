@@ -1,7 +1,7 @@
 import React from "react";
 import { ArrowRight, RotateCcw } from "lucide-react";
 import { Modal, IconFor } from "./ui";
-import { WEAPONS, UPGRADES, upgradeChoices, floorSupply } from "../game/engine";
+import { WEAPONS, UPGRADES, rewardChoices, floorSupply } from "../game/engine";
 import { FRAME_FINISHES, finishUnlocked } from "../game/preferences";
 import WeaponIcon from "./WeaponIcon";
 import { dailyDate, dailySeed, dailyLabel } from "../game/daily";
@@ -96,7 +96,7 @@ export default function GameDialogs({
               incoming damage when you lose.
             </li>
             <li>
-              Win a fight to upgrade your fighter and receive an item. Every
+              Win a fight to choose a perk, upgrade or supply, then pick your route. Every
               fifth floor has a boss. The prism vault reverses the cycle.
             </li>
           </ol>
@@ -242,10 +242,10 @@ export default function GameDialogs({
             +{run.result?.bounty || 0} credits · Choose your next upgrade
           </div>
           <p className="modal-intro">
-            Recover up to 20 health, or 35 with More health.
+            Health fully restored for the next fight.
           </p>
           <div className="upgrade-grid">
-            {upgradeChoices(run).map((u) => (
+            {rewardChoices(run).map((u) => (
               <button key={u.id} onClick={() => advance(u.id)}>
                 <span className="upgrade-icon">
                   <IconFor id={u.icon} size={30} />
@@ -253,7 +253,7 @@ export default function GameDialogs({
                 <h3>{u.name}</h3>
                 <p>{u.detail}</p>
                 <span className="install-label">
-                  Take & continue <ArrowRight size={16} />
+                  Take reward <ArrowRight size={16} />
                 </span>
               </button>
             ))}

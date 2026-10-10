@@ -1,5 +1,8 @@
 import { resourceProjection } from "./calculus.js";
 import { FIGHTERS, fighterFor, inventoryFor, ITEM_TYPES } from "./fighters.js";
+import { encounterFor, phaseFor, signatureWarning } from './rivals.js';
+import { PERKS, perkFor, perkTotals, addPerk } from './perks.js';
+import { routeChoices } from './routes.js';
 export const WEAPONS = [
   {
     id: "rock",
@@ -76,6 +79,13 @@ export const APEX_PROTOCOLS = [
       "The tell changes to counter your last hand. Mix up your choices.",
   },
 ];
+export function abilityDetail(enemy){
+  const phase=phaseFor(enemy);
+  if(enemy.ability?.id==='thermal')return `Each exchange adds ${10+6*phase} heat before cooling and guard effects.`;
+  if(enemy.ability?.id==='siphon')return `Successful hits restore up to ${12+4*phase} rival health.`;
+  if(enemy.ability?.id==='plating')return `Ordinary attacks lose ${Math.round((1-[.8,.72,.62][phase])*100)}% damage. Heavy attacks break through.`;
+  return enemy.ability?.detail||'';
+}
 export const DISTRICTS = [
   {
     name: "The rain district",
@@ -155,7 +165,7 @@ export const UPGRADES = [
     id: "capacity",
     name: "More health",
     kind: "Survival",
-    detail: "+20 max health. Recover 35 health.",
+    detail: "+20 max health.",
     icon: "heart",
   },
   {
@@ -182,7 +192,7 @@ export function random(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-export function levelFor(seed, level) {
+export function levelFor(seed, level, route = 'normal') {
   const rng = random(seed + level * 7919);
   const district = { ...DISTRICTS[(level - 1) % DISTRICTS.length] };
   if (level > 6) {
@@ -204,44 +214,28 @@ export function levelFor(seed, level) {
     }
     district.modifier += ` / ${anomaly.toLowerCase()}`;
   }
-  const names = [
-    "Kuro",
-    "Nyx",
-    "Vanta",
-    "Hollow",
-    "Wraith",
-    "Mako",
-    "Cipher",
-    "Vex",
-    "Onyx",
-    "Sable",
-  ];
-  const fighters = ["Ronin", "Specter", "Sentinel", "Revenant", "Warden"];
-  const boss = level % 5 === 0;
-  const ability = boss
-    ? APEX_PROTOCOLS[
-        (Math.floor(level / 5) - 1 + (seed % APEX_PROTOCOLS.length)) %
-          APEX_PROTOCOLS.length
-      ]
-    : null;
-  const maxHp = 58 + level * 7 + (boss ? 28 : 0) + Math.floor(rng() * 10);
+  const rival = encounterFor(seed,level,route), {boss,elite} = rival;
+  const ability = boss || elite ? APEX_PROTOCOLS.find(a=>a.id===rival.ability) : null;
+  const maxHp = 58 + level * 7 + (boss ? 45 : elite ? 24 : 0) + Math.floor(rng() * 10);
   const favorite = Math.floor(rng() * 3);
   return {
     level,
     district,
     boss,
+    elite,
+    rival,
     ability,
-    name: `${names[Math.floor(rng() * names.length)]} ${fighters[Math.floor(rng() * fighters.length)]}`,
+    name: rival.name,
     serial: `MK.${String(Math.floor(rng() * 899) + 100)}`,
     maxHp,
     hp: maxHp,
-    damage: 14 + Math.floor(level * 1.4) + (boss ? 7 : 0),
+    damage: 14 + Math.floor(level * 1.4) + (boss ? 7 : elite ? 3 : 0),
     favorite,
     signal: favorite,
     confidence:
-      (ability?.id === "blackout" ? 55 : district.static ? 45 : 76) -
+      (ability?.id === "blackout" ? 45 : district.static ? Math.min(45,rival.personalityInfo.reliability) : rival.personalityInfo.reliability) -
       (district.signalPenalty || 0),
-    pattern: ["adaptive", "aggressive", "methodical"][Math.floor(rng() * 3)],
+    pattern: rival.personality,
   };
 }
 export function newRun(
@@ -251,13 +245,19 @@ export function newRun(
 ) {
   const fighter = fighterFor(character);
   return {
-    version: 1,
+    version: 2,
     seed,
     challenge,
     character: fighter.id,
     inventory: inventoryFor(fighter.id),
+    perks: {},
+    routes: [],
+    routeChoice: 'normal',
+    encounterSeen: false,
+    itemsUsed: 0,
     level: 1,
     turn: 0,
+    fightTurn: 0,
     phase: "ready",
     hp: fighter.hp,
     maxHp: fighter.hp,
@@ -286,11 +286,15 @@ export function damageFor(run, outcome, stance = "strike") {
   const win = outcome === "win",
     tie = outcome === "draw";
   if (!win) return 0;
+  const p=perkTotals(run);
   const base =
     23 +
     fighterFor(run.character).power +
     run.upgrades.power * 5 +
-    Math.min(run.combo, 4) * 3;
+    Math.min(run.combo, 4) * (3+(p.comboDamage||0)) + (p.damage||0) +
+    ((run.fightTurn??run.turn)===0?p.openingDamage||0:0) + (run.enemy.hp<=run.enemy.maxHp*.30?p.closingDamage||0:0) +
+    (run.heat<25?p.coldDamage||0:0) + (run.scanned?p.scanDamage||0:0) +
+    (run.hp<run.maxHp*.4?p.lowDamage||0:0) + (run.enemy.boss?p.bossDamage||0:0);
   return Math.max(
     1,
     Math.round(
@@ -298,11 +302,19 @@ export function damageFor(run, outcome, stance = "strike") {
         (stance === "overdrive" ? 2 : stance === "guard" ? 0.72 : 1) *
         (run.heat >= 75 ? 0.7 : 1) *
         (win && run.enemy.ability?.id === "plating" && stance !== "overdrive"
-          ? 0.8
+          ? [0.8,0.72,0.62][phaseFor(run.enemy)]
           : 1) *
         (run.enemy.district.amplify || 1),
     ),
   );
+}
+export function tellReliabilityFor(run){return Math.min(100,run.enemy.confidence+(perkTotals(run).tellBoost||0));}
+function enemyThrow(run,rng){
+  const e=run.enemy;
+  if(rng()<tellReliabilityFor(run)/100)return e.signal;
+  const weights=e.rival?.personalityInfo.weights||[1,1,1];
+  const other=[0,1,2].filter(i=>i!==e.signal),sum=weights[other[0]]+weights[other[1]];
+  return rng()*sum<weights[other[0]]?other[0]:other[1];
 }
 export function resolveTurn(run, weaponId, stance = "strike") {
   if (
@@ -314,11 +326,7 @@ export function resolveTurn(run, weaponId, stance = "strike") {
     return run;
   const rng = random(run.seed + run.level * 1031 + run.turn * 997);
   const enemy = { ...run.enemy };
-  const confidence = enemy.confidence / 100;
-  const enemyIndex =
-    rng() < confidence
-      ? enemy.signal
-      : (enemy.signal + 1 + Math.floor(rng() * 2)) % 3;
+  const enemyIndex = enemyThrow(run,rng), p=perkTotals(run), bossPhase=phaseFor(enemy);
   const enemyWeapon = WEAPONS[enemyIndex];
   const win =
     counterFor(enemyWeapon.id, enemy.district.reverse).id === weaponId;
@@ -334,26 +342,29 @@ export function resolveTurn(run, weaponId, stance = "strike") {
         (enemy.ability?.id === "redline" && enemy.hp <= enemy.maxHp / 2
           ? 1.3
           : 1) *
-        (enemy.district.amplify || 1),
+        (enemy.district.amplify || 1) * (enemy.boss?[1,1.1,1.25][bossPhase]:1) *
+        (signatureWarning(run)?1.4:1) * (stance==='guard'?1-(p.guardReduction||0):1),
     ) -
-      run.upgrades.armor * 3,
+      run.upgrades.armor * 3 - (p.armor||0) - (stance==='guard'?p.guardArmor||0:0),
   );
+  const avoided=outcome==='loss'&&stance==='guard'&&p.dodge&&(run.turn+1)%4===0;
+  const actualIncoming=avoided?0:incoming;
   enemy.hp = Math.max(0, enemy.hp - damage);
   const enemyHealing =
     !win && !tie && enemy.hp > 0 && enemy.ability?.id === "siphon"
-      ? Math.min(12, enemy.maxHp - enemy.hp)
+      ? Math.min(12+(enemy.boss?bossPhase*4:0), enemy.maxHp - enemy.hp)
       : 0;
   enemy.hp += enemyHealing;
   const hp = Math.min(
     run.maxHp,
-    Math.max(0, run.hp - incoming + (tie && enemy.district.healTie ? 8 : 0)),
+    Math.max(0, run.hp - actualIncoming + (tie ? (enemy.district.healTie ? 8 : 0)+(p.drawHeal||0) : win ? p.winHeal||0 : 0)),
   );
   const phase = hp <= 0 ? "defeat" : enemy.hp <= 0 ? "upgrade" : "ready";
   const bounty =
     phase === "upgrade"
       ? Math.round(
-          (120 + run.level * 20 + (enemy.boss ? 100 : 0)) *
-            (enemy.district.bounty || 1),
+          (120 + run.level * 20 + (enemy.boss ? 100 : enemy.elite ? 70 : 0)) *
+            (enemy.district.bounty || 1) * (1+(p.bounty||0)+(enemy.elite?p.eliteBounty||0:0)),
         )
       : 0;
   const signalRoll = rng();
@@ -362,7 +373,10 @@ export function resolveTurn(run, weaponId, stance = "strike") {
       ? WEAPONS.indexOf(counterFor(weaponId, enemy.district.reverse))
       : enemy.pattern === "methodical"
         ? (enemy.signal + 1) % 3
-        : enemy.pattern === "adaptive" && signalRoll < 0.65
+      : enemy.pattern === 'mimic' && signalRoll<.8 ? WEAPONS.findIndex(w=>w.id===weaponId)
+      : enemy.pattern === 'patient' && signalRoll<.75 ? WEAPONS.indexOf(counterFor(weaponId,enemy.district.reverse))
+      : enemy.pattern === 'aggressor' && signalRoll<.70 ? 0
+      : enemy.pattern === "adaptive" && signalRoll < 0.65
           ? WEAPONS.indexOf(counterFor(weaponId, enemy.district.reverse))
           : signalRoll < 0.55
             ? enemy.favorite
@@ -371,39 +385,40 @@ export function resolveTurn(run, weaponId, stance = "strike") {
     (enemy.district.static
       ? 45
       : enemy.ability?.id === "blackout"
-        ? 55
+        ? 55-(enemy.boss?phaseFor(enemy)*10:0)
         : enemy.pattern === "methodical"
           ? 90
-          : 68 + Math.floor(rng() * 18)) - (enemy.district.signalPenalty || 0);
+          : (enemy.rival?.personalityInfo.reliability || 76)) - (enemy.district.signalPenalty || 0);
   const result = {
     outcome,
     stance,
     playerWeapon: weaponId,
     enemyWeapon: enemyWeapon.id,
     damage,
-    incoming,
+    incoming: actualIncoming,
+    avoided: Boolean(avoided),
+    signature: Boolean(signatureWarning(run)&&outcome==='loss'),
+    phaseChange: enemy.boss && enemy.hp>0 && phaseFor(enemy)>bossPhase ? {from:bossPhase,to:phaseFor(enemy)} : null,
     enemyHealing,
-    healing:
-      tie && enemy.district.healTie
-        ? Math.min(8, Math.max(0, hp - (run.hp - incoming)))
-        : 0,
+    healing: Math.max(0,hp-(run.hp-actualIncoming)),
     combo,
     bounty,
     id: run.turn + 1,
   };
-  const projected = resourceProjection(run, stance);
+  const projected = resourceProjection(run, stance,1,outcome);
   return {
     ...run,
     turn: run.turn + 1,
+    fightTurn: (run.fightTurn??run.turn)+1,
     phase,
     hp,
     enemy,
     combo,
     bestCombo: Math.max(run.bestCombo, combo),
     wins: run.wins + (win ? 1 : 0),
-    charge: projected.charge,
+    charge: Math.min(100,projected.charge+(run.scanned?p.scanRefund||0:0)),
     heat: projected.heat,
-    credits: run.credits + bounty + (win ? 15 : 0),
+    credits: run.credits + bounty + (win ? 15+(p.winCredits||0) : 0),
     scanned: null,
     history: [result, ...run.history].slice(0, 5),
     result,
@@ -433,7 +448,8 @@ export function itemAvailable(run, id) {
 export function useEarnedItem(run, weaponId, id) {
   if (openingFor(run, weaponId)?.outcome !== "win" || !itemAvailable(run, id))
     return run;
-  const next = resolveTurn(run, weaponId);
+  const next = resolveTurn(run, weaponId),p=perkTotals(run);
+  const healing=Math.min(35+(p.medkit||0),run.maxHp-run.hp);
   const result = {
     ...next.result,
     damage: 0,
@@ -441,19 +457,22 @@ export function useEarnedItem(run, weaponId, id) {
     bounty: 0,
     combo: 0,
     item: id,
-    healing: id === "medkit" ? Math.min(35, run.maxHp - run.hp) : 0,
+    healing: id === "medkit" ? healing : 0,
+    phaseChange: null,
+    signature: false,
   };
   return {
     ...next,
     phase: "ready",
     enemy: { ...next.enemy, hp: run.enemy.hp },
     hp: Math.min(run.maxHp, run.hp + result.healing),
-    charge: id === "battery" ? Math.min(100, run.charge + 35) : run.charge,
-    heat: id === "coolant" ? Math.max(0, run.heat - 40) : run.heat,
+    charge: id === "battery" ? Math.min(100, run.charge + 35+(p.batteryItem||0)) : run.charge,
+    heat: id === "coolant" ? Math.max(0, run.heat - 40-(p.coolantItem||0)) : run.heat,
     combo: 0,
     bestCombo: run.bestCombo,
-    credits: run.credits + 15,
-    inventory: { ...run.inventory, [id]: run.inventory[id] - 1 },
+    credits: run.credits + 15+(p.winCredits||0),
+    itemsUsed: (run.itemsUsed||0)+1,
+    inventory: { ...run.inventory, [id]: run.inventory[id] - (id==='medkit'&&p.medkitSave&&((run.itemsUsed||0)+1)%3===0?0:1) },
     result,
     history: [result, ...run.history].slice(0, 5),
   };
@@ -462,16 +481,14 @@ export function floorSupply(run) {
   return ITEM_TYPES[(run.seed + run.level) % ITEM_TYPES.length];
 }
 export function scanSignal(run) {
-  if (run.phase !== "ready" || run.charge < 30 || run.scanned || run.scanUsed)
+  const cost=Math.max(0,30-(perkTotals(run).scanDiscount||0));
+  if (run.phase !== "ready" || run.charge < cost || run.scanned || run.scanUsed)
     return run;
   const rng = random(run.seed + run.level * 1031 + run.turn * 997);
-  const index =
-    rng() < run.enemy.confidence / 100
-      ? run.enemy.signal
-      : (run.enemy.signal + 1 + Math.floor(rng() * 2)) % 3;
+  const index = enemyThrow(run,rng);
   return {
     ...run,
-    charge: run.charge - 30,
+    charge: run.charge - cost,
     scanUsed: true,
     scanned: WEAPONS[index].id,
   };
@@ -491,31 +508,55 @@ export function repairFrame(run) {
     repairUsed: true,
   };
 }
-export function chooseUpgrade(run, id) {
-  if (run.phase !== "upgrade" || !UPGRADES.some((u) => u.id === id)) return run;
+export function chooseReward(run, id) {
+  const upgrade=UPGRADES.find(u=>u.id===id),perk=perkFor(id),item=ITEM_TYPES.find(i=>`item:${i.id}`===id);
+  if (run.phase !== "upgrade" || (!upgrade&&!perk&&!item)) return run;
   const maxHp = run.maxHp + (id === "capacity" ? 20 : 0);
   const supply = floorSupply(run).id;
-  return {
+  let next = {
     ...run,
-    upgrades: { ...run.upgrades, [id]: run.upgrades[id] + 1 },
-    level: run.level + 1,
-    phase: "ready",
+    upgrades: upgrade?{ ...run.upgrades, [id]: run.upgrades[id] + 1 }:run.upgrades,
+    phase: "route",
     maxHp,
     inventory: {
       ...(run.inventory || inventoryFor(run.character)),
       [supply]: Math.min(5, (run.inventory?.[supply] || 0) + 1),
     },
-    hp: Math.min(maxHp, run.hp + (id === "capacity" ? 35 : 20)),
+    hp: maxHp,
     charge: Math.min(100, run.charge + 10),
     heat: Math.max(0, run.heat - 35),
     combo: run.combo,
-    enemy: levelFor(run.seed, run.level + 1),
     scanned: null,
     repairUsed: false,
     scanUsed: false,
-    result: null,
-    history: [],
   };
+  if(perk){next=addPerk(next,id);if(run.enemy.elite)next=addPerk(next,id);}
+  if(item)next.inventory[item.id]=Math.min(5,next.inventory[item.id]+(run.enemy.elite?2:1));
+  if(run.enemy.boss)next=addPerk(next,run.enemy.rival.reward);
+  return next;
+}
+export function chooseRoute(run,id){
+  if(run.phase!=='route'||!routeChoices(run).some(r=>r.id===id))return run;
+  const level=run.level+1,room=['rest','shop','event'].includes(id);
+  return {...run,level,routeChoice:id,phase:room?'room':'ready',enemy:levelFor(run.seed,level,id),
+    routes:[...(run.routes||[]),{level,type:id}].slice(-20),encounterSeen:false,
+    fightTurn:0,result:null,history:[]};
+}
+// Kept for old engine callers; the UI uses the explicit reward and route steps.
+export function chooseUpgrade(run,id){
+  if(!UPGRADES.some(u=>u.id===id))return run;
+  const rewarded=chooseReward(run,id);
+  return rewarded===run?run:chooseRoute(rewarded,'normal');
+}
+export function rewardChoices(run){
+  const rng=random(run.seed+run.level*3137),frames=upgradeChoices(run),
+    perks=PERKS.filter(p=>p.cap>1&&(run.perks?.[p.id]||0)<p.cap),
+    supplies=ITEM_TYPES.filter(i=>(run.inventory?.[i.id]||0)<5);
+  const perk=perks[Math.floor(rng()*perks.length)];
+  const item=supplies[Math.floor(rng()*supplies.length)];
+  return [{...frames[0],kind:'Frame upgrade'},
+    perk?{...perk,detail:`${run.enemy.elite?'Gain 2 stacks. ':''}${perk.detail}`}:{...frames[1],kind:'Frame upgrade'},
+    item?{...item,id:`item:${item.id}`,name:`${run.enemy.elite?2:1} ${item.name.toLowerCase()}`,kind:'Supply',icon:'heart'}:{...frames[2],kind:'Frame upgrade'}];
 }
 export function upgradeChoices(run) {
   const rng = random(run.seed + run.level * 919);
@@ -529,19 +570,19 @@ export function loadSave(storage) {
     const data = JSON.parse(storage.getItem("trinity-save-v1"));
     if (
       !data ||
-      data.version !== 1 ||
+      ![1,2].includes(data.version) ||
       !Number.isInteger(data.seed) ||
       data.seed < 0 ||
       data.seed >= 2 ** 32 ||
       !Number.isSafeInteger(data.level) ||
       data.level < 1 ||
-      !["ready", "upgrade", "defeat"].includes(data.phase)
+      !["ready", "upgrade", "route", "room", "defeat"].includes(data.phase)
     )
       return null;
     if (data.character && !FIGHTERS.some((f) => f.id === data.character))
       return null;
     const base = newRun(data.seed, null, data.character),
-      generated = levelFor(data.seed, data.level);
+      generated = levelFor(data.seed, data.level, data.version===2?data.routeChoice:'normal');
     if (
       ![
         "hp",
@@ -563,8 +604,9 @@ export function loadSave(storage) {
       data.heat > 100 ||
       !data.enemy ||
       !Number.isFinite(data.enemy.hp) ||
+      (data.version===1&&(!Number.isFinite(data.enemy.maxHp)||data.enemy.maxHp<=0)) ||
       data.enemy.hp < 0 ||
-      data.enemy.hp > generated.maxHp ||
+      data.enemy.hp > (data.version===1?data.enemy.maxHp:generated.maxHp) ||
       !data.upgrades ||
       !Object.keys(base.upgrades).every(
         (k) => Number.isInteger(data.upgrades[k]) && data.upgrades[k] >= 0,
@@ -580,9 +622,12 @@ export function loadSave(storage) {
       return null;
     if (data.phase === "ready" && (data.hp === 0 || data.enemy.hp === 0))
       return null;
-    if (data.phase === "upgrade" && (data.enemy.hp !== 0 || data.hp === 0))
+    if (["upgrade","route"].includes(data.phase) && (data.enemy.hp !== 0 || data.hp === 0))
       return null;
     if (data.phase === "defeat" && data.hp !== 0) return null;
+    if(data.version===2&&data.perks&&Object.entries(data.perks).some(([id,n])=>!perkFor(id)||!Number.isInteger(n)||n<0||n>perkFor(id).cap))return null;
+    if(data.version===2&&!['normal','elite','rest','event','shop'].includes(data.routeChoice||'normal'))return null;
+    if(data.phase==='room'&&!['rest','event','shop'].includes(data.routeChoice))return null;
     const validResult = (r) =>
       r &&
       ["win", "draw", "loss"].includes(r.outcome) &&
@@ -606,6 +651,13 @@ export function loadSave(storage) {
     return {
       ...base,
       ...data,
+      version: 2,
+      perks: data.version===2 ? {...(data.perks||{})} : {},
+      routeChoice: data.version===2 ? data.routeChoice||'normal' : 'normal',
+      routes: Array.isArray(data.routes)?data.routes.filter(r=>Number.isSafeInteger(r.level)&&r.level>0&&['normal','elite','rest','event','shop'].includes(r.type)).slice(-20):[],
+      fightTurn: Number.isSafeInteger(data.fightTurn)&&data.fightTurn>=0?data.fightTurn:0,
+      itemsUsed: Number.isSafeInteger(data.itemsUsed)&&data.itemsUsed>=0?data.itemsUsed:0,
+      encounterSeen: data.encounterSeen===true,
       character: base.character,
       inventory: data.inventory
         ? Object.fromEntries(
@@ -619,7 +671,7 @@ export function loadSave(storage) {
           : null,
       enemy: {
         ...generated,
-        hp: data.enemy.hp,
+        hp: data.version===1?Math.min(generated.maxHp,Math.round(generated.maxHp*data.enemy.hp/Math.max(1,data.enemy.maxHp))):data.enemy.hp,
         signal: data.enemy.signal,
         confidence: data.enemy.confidence,
       },

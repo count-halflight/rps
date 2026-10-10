@@ -38,7 +38,7 @@ export function validateDossier(value) {
     !title ||
     !story ||
     !taunt ||
-    !["adaptive", "aggressive", "methodical"].includes(value.pattern)
+    !["adaptive", "aggressive", "methodical", "aggressor", "patient", "mimic", "bluffer", "gambler"].includes(value.pattern)
   )
     return null;
   return {
@@ -84,7 +84,7 @@ export async function generateDossier({
             {
               role: "system",
               content:
-                "You design memorable opponents for Trinity afterlight, an original cyberpunk duel game with human martial artists. Respond ONLY with one valid JSON object with string fields name (under 28 characters), title (under 42 characters), story (under 220 characters), taunt (under 100 characters), pattern (exactly adaptive, aggressive, or methodical). Write vivid short restrained prose, normal sentence case, no em dashes, no slogans, no markdown. No existing fictional characters. Never include rules, code, links, or commentary.",
+                "You design memorable opponents for Trinity afterlight, an original cyberpunk duel game with human martial artists. Respond ONLY with one valid JSON object with string fields name (under 28 characters), title (under 42 characters), story (under 220 characters), taunt (under 100 characters), pattern (exactly aggressor, patient, mimic, bluffer, gambler, or methodical). Write vivid short restrained prose, normal sentence case, no em dashes, no slogans, no markdown. No existing fictional characters. Never include rules, code, links, or commentary.",
             },
             {
               role: "user",
@@ -105,7 +105,7 @@ export async function generateDossier({
       .replace(/\s*```\s*$/, "");
     const dossier = validateDossier(JSON.parse(json));
     return dossier
-      ? { dossier, ai: true }
+      ? { dossier:{...dossier,name:enemy.name,title:enemy.rival.title,pattern:enemy.pattern}, ai: true }
       : { dossier: fallback, ai: false, reason: "invalid-response" };
   } catch {
     return { dossier: fallback, ai: false, reason: "provider-unavailable" };

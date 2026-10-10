@@ -63,3 +63,22 @@ test("each weapon has a distinct cinematic and finisher with bounded choreograph
   }
   assert.equal(titles.size, 6);
 });
+
+test('normal and final attacks cut through four directed shots; reduced motion keeps a fixed camera', () => {
+  for(const final of [false,true]){
+    const a={...attackPresentation('scissors',final,false,0,'echo'),playerWeapon:'scissors',outcome:'win',finalHit:true};
+    const frame=p=>cinematicFrame(a,a.duration*p/1000);
+    assert.equal(frame(.1).shot,'anticipation');
+    assert.equal(frame(.3).shot,'approach');
+    assert.equal(frame(a.impactAt).shot,'impact');
+    assert.equal(frame(.9).shot,'recovery');
+    assert.notDeepEqual(frame(.1).camera,frame(a.impactAt).camera);
+    const reduced={...a,reduced:true};
+    assert.deepEqual(cinematicFrame(reduced,.3).camera,cinematicFrame(reduced,1).camera);
+    if(final){
+      assert.ok(frame(.37).secondaryImpact>.9);
+      assert.equal(frame(.37).collapse,0);
+      assert.ok(frame(.95).collapse>.95);
+    }
+  }
+});

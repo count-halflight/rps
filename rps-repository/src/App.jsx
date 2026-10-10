@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Suspense, lazy } from "react";
 import { ArrowUpRight, Expand, Pause, Volume2, VolumeX } from "lucide-react";
 import BattleStage from "./components/BattleStage";
 import CombatConsole from "./components/CombatConsole";
@@ -7,7 +7,8 @@ import {
   WEAPONS,
   newRun,
   resolveTurn,
-  chooseUpgrade,
+  chooseReward,
+  chooseRoute,
   loadSave,
   damageFor,
   openingFor,
@@ -19,6 +20,9 @@ import {
   configureAudio,
   setAmbience,
   setBattleAudio,
+  playChoreography,
+  playStinger,
+  setBossAudio,
 } from "./game/audio";
 import {
   FRAME_FINISHES,
@@ -37,7 +41,12 @@ import {
 } from "./game/training";
 import TrainingCoach from "./components/TrainingCoach";
 import CharacterSelect from "./components/CharacterSelect";
+import RunFlow from './components/RunFlow';
+import EncounterIntro from './components/EncounterIntro';
+import { roomAction } from './game/routes.js';
+import { phaseFor } from './game/rivals.js';
 import { fighterFor, rivalFighter } from "./game/fighters";
+const HeroArena=lazy(()=>import("./components/Arena"));
 function safeRead(key, fallback) {
   try {
     return JSON.parse(localStorage.getItem(key)) ?? fallback;
@@ -77,6 +86,8 @@ export default function App() {
     [selection, setSelection] = useState(null);
   const selectedRun = useRef({});
   const [training, setTraining] = useState(null);
+  const [entrance,setEntrance]=useState(null);
+  const introTimer=useRef(null),queuedHand=useRef(null);
   const campaign = useRef(null);
   const [modal, setModal] = useState(null),
     [sound, setSound] = useState(
@@ -96,7 +107,8 @@ export default function App() {
       return loadPreferences({ getItem: () => null });
     }
   });
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(false),[arenaReady,setArenaReady]=useState(false);
+  useEffect(()=>{if(!started)setArenaReady(false);},[started]);
   const [hasSave, setHasSave] = useState(() => {
     try {
       return Boolean(loadSave(localStorage));
@@ -111,6 +123,15 @@ export default function App() {
     return () => document.removeEventListener("fullscreenchange", update);
   }, []);
   const paused = Boolean(modal) || !started;
+  useEffect(()=>{
+    if(!started||!arenaReady||training||run.phase!=='ready'||run.encounterSeen)return;
+    const reduced=preferences.motion==='reduced'||matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setEntrance({kind:'encounter',id:`intro-${run.seed}-${run.level}`,duration:reduced?700:run.enemy.boss?5000:2300});
+    playStinger(run.enemy.rival,sound);
+    introTimer.current=setTimeout(()=>{setEntrance(null);setRun(r=>({...r,encounterSeen:true}));},reduced?700:run.enemy.boss?5000:2300);
+    return()=>clearTimeout(introTimer.current);
+  },[started,arenaReady,Boolean(training),run.level,run.phase,run.encounterSeen]);
+  const finishEntrance=()=>{clearTimeout(introTimer.current);setEntrance(null);setRun(r=>({...r,encounterSeen:true}));};
   const finish =
     FRAME_FINISHES.find(
       (f) => f.id === preferences.skin && finishUnlocked(f, record.level),
@@ -132,6 +153,7 @@ export default function App() {
     return () => setAmbience(false);
   }, [sound, preferences.music, paused, run.level, run.phase]);
   useEffect(() => {
+    setBossAudio(run.enemy.boss?phaseFor(run.enemy)+1:0);
     setBattleAudio(
       run.enemy.hp / run.enemy.maxHp,
       run.hp / run.maxHp,
@@ -148,13 +170,19 @@ export default function App() {
     preferences.music,
     paused,
   ]);
+  useEffect(()=>{
+    if(!import.meta.env.DEV||!new URLSearchParams(location.search).has('proof'))return;
+    const load=e=>{clearTimeout(timer.current);clearTimeout(introTimer.current);setRun(e.detail);setEntrance(null);setStarted(true);setSelection(null);setModal(null);setTraining(null);setBusy(false);busyRef.current=false;setPending(null);setAnimation(null);};
+    window.addEventListener('trinity:proof-run',load);
+    return()=>window.removeEventListener('trinity:proof-run',load);
+  },[]);
   const district = run.enemy.district;
   const { dossier: rivalDossier, ai: liveAi } = useEncounter(
     run.seed,
     run.level,
     preferences.liveDossiers && !training,
   );
-  const dossier = training ? trainingDossier(training.step) : rivalDossier;
+  const dossier = training ? trainingDossier(training.step) : {...rivalDossier,name:run.enemy.rival.name,title:run.enemy.rival.title,taunt:run.enemy.rival.taunt,story:run.enemy.rival.lore};
   const ai = !training && liveAi;
   const overdriveLocked = run.charge < 40 || run.heat >= 75;
   useEffect(() => {
@@ -198,6 +226,7 @@ export default function App() {
     () => () => {
       clearTimeout(timer.current);
       clearTimeout(toastTimer.current);
+      clearTimeout(introTimer.current);
     },
     [],
   );
@@ -210,6 +239,12 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(""), 2800);
   };
   const commit = (next) => {
+    if(!training&&next.result?.phaseChange){
+      const phase=next.result.phaseChange.to;
+      setEntrance({kind:'phase',phase,id:`phase-${next.level}-${next.turn}`,duration:1800});
+      playTone('finisher',sound);
+      introTimer.current=setTimeout(()=>setEntrance(null),1800);
+    }
     if (training) {
       const lesson = progressTraining(training, next);
       setTraining(lesson);
@@ -222,6 +257,7 @@ export default function App() {
     setPending(null);
     busyRef.current = false;
     setBusy(false);
+    const queued=queuedHand.current;queuedHand.current=null;if(queued&&next.phase==='ready'&&!next.result?.phaseChange)timer.current=setTimeout(()=>action.current(queued),80);
     if (next.phase === "upgrade" && !training) playTone("upgrade", sound);
   };
   const reducedMotion = () =>
@@ -242,8 +278,8 @@ export default function App() {
         item === "medkit"
           ? `+${next.result.healing} health`
           : item === "coolant"
-            ? "Heat cleared"
-            : " +35 charge",
+            ? `−${run.heat-next.heat} heat`
+            : `+${next.charge-run.charge} charge`,
       );
       timer.current = setTimeout(() => commit(next), 650);
       return;
@@ -252,7 +288,7 @@ export default function App() {
       attacker = loss
         ? training?.step === 3
           ? "cinder"
-          : rivalFighter(run.level).id
+          : run.enemy.rival.character
         : run.character;
     const cinematic = attackPresentation(
       loss ? next.result.enemyWeapon : hand,
@@ -260,17 +296,22 @@ export default function App() {
       reducedMotion(),
       variant,
       attacker,
+      loss&&next.result.signature?`${run.enemy.rival.id}.signature`:null,
     );
     setAnimation({
       ...next.result,
       ...cinematic,
+      braced:loss&&attackStance==='guard',
+      defeatedBoss:!loss&&next.phase==='upgrade'&&run.enemy.boss?run.enemy.rival.model:null,
       finalHit: loss ? next.phase === "defeat" : next.phase === "upgrade",
       potentialDamage: loss
         ? next.result.incoming
         : damageFor(run, "win", attackStance),
+      startedAt:performance.now(),
       id: `${run.seed}-${run.level}-${next.turn}`,
     });
-    playTone(loss ? next.result.enemyWeapon : hand, sound);
+    playChoreography(cinematic,sound);
+    navigator.vibrate?.(20);
     playTone(
       cinematic.finisher ? "finisher" : next.result.outcome,
       sound,
@@ -279,11 +320,13 @@ export default function App() {
     timer.current = setTimeout(() => commit(next), cinematic.duration);
   };
   const engage = (choice = weapon) => {
+    if(busyRef.current&&animation){queuedHand.current=choice;setWeapon(choice);navigator.vibrate?.(12);return;}
     if (
-      !started ||
+      !started || !arenaReady ||
       busyRef.current ||
       pending ||
       modal ||
+      entrance ||
       run.phase !== "ready"
     )
       return;
@@ -337,6 +380,7 @@ export default function App() {
         else if (!busyRef.current && run.phase === "ready") setModal("pause");
         return;
       }
+      if(busyRef.current&&animation&&['1','2','3'].includes(e.key)){queuedHand.current=WEAPONS[Number(e.key)-1].id;return;}
       if (!started || modal || run.phase !== "ready" || busyRef.current) return;
       if (CONTROLS.weaponKeys.includes(e.key)) {
         if (pending?.stage === "action") {
@@ -354,9 +398,9 @@ export default function App() {
     };
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [modal, run.phase, sound, started, pending]);
+  }, [modal, run.phase, sound, started, pending, animation]);
   const advance = (id) => {
-    setRun((current) => chooseUpgrade(current, id));
+    setRun((current) => chooseReward(current, id));
     setAnimation(null);
     setPending(null);
     setStance("strike");
@@ -385,6 +429,7 @@ export default function App() {
     setAnimation(null);
   };
   const train = () => {
+    clearTimeout(introTimer.current);setEntrance(null);
     begin();
     if (busyRef.current) return;
     if (!training) campaign.current = run;
@@ -409,6 +454,7 @@ export default function App() {
     setModal(null);
   };
   const restart = (seed, challenge = null) => {
+    clearTimeout(introTimer.current);setEntrance(null);
     clearTimeout(timer.current);
     busyRef.current = false;
     setBusy(false);
@@ -445,7 +491,7 @@ export default function App() {
       }}
     >
       {started && (
-        <main className="game-surface">
+        <main className={`game-surface ${entrance?'is-introducing':''}`}>
           <BattleStage
             run={run}
             weapon={weapon}
@@ -456,12 +502,14 @@ export default function App() {
             dossier={dossier}
             preferences={preferences}
             finish={finish}
+            entrance={entrance}
+            onReady={()=>setArenaReady(true)}
           />
           <header className="game-tools">
             <button
               className="menu-button"
               aria-label="Pause game"
-              disabled={busy}
+              disabled={busy||Boolean(entrance)}
               onClick={() => setModal("pause")}
             >
               <Pause size={18} /> <span>Menu</span>
@@ -498,6 +546,7 @@ export default function App() {
               onExit={leaveTraining}
             />
           )}
+          <EncounterIntro entrance={entrance} run={run} onSkip={finishEntrance}/>
           <CombatConsole
             run={run}
             setRun={setRun}
@@ -507,8 +556,8 @@ export default function App() {
             chooseAction={chooseAction}
             stance={stance}
             setStance={setStance}
-            busy={busy}
-            modal={modal}
+            busy={busy || !arenaReady}
+            modal={modal||entrance}
             sound={sound}
             engage={engage}
             notify={notify}
@@ -535,7 +584,7 @@ export default function App() {
       )}
       {!started && !selection && (
         <div className="title-screen">
-          <div className="title-art" />
+          <div className="title-art"><Suspense fallback={null}><HeroArena character="echo" previewSingle weapon="scissors" enemyLevel={1} district={run.enemy.district} quality={preferences.quality} reducedMotion={preferences.motion==='reduced'} titleHero/></Suspense></div>
           <div className="title-content">
             <p className="title-credit">a game by Halflight</p>
             <h1>
@@ -625,6 +674,7 @@ export default function App() {
         onTraining={train}
         training={Boolean(training)}
       />
+      {started&&!training&&<RunFlow run={run} onRoute={id=>{setRun(r=>chooseRoute(r,id));setAnimation(null);setPending(null);playTone('engage',sound);}} onRoom={id=>{setRun(r=>roomAction(r,id));playTone('upgrade',sound);}}/>}
     </div>
   );
 }
