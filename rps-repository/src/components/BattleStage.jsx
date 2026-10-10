@@ -13,6 +13,7 @@ import {
 import { Meter, pad } from "./ui";
 import { weaponFor } from "../game/engine";
 import { IntegralGraph } from "./CalculusLab";
+import { assetUrl } from "../game/assets";
 const Arena = lazy(() => import("./Arena"));
 export default function BattleStage({
   run,
@@ -47,7 +48,7 @@ export default function BattleStage({
       <div
         className="arena-backdrop"
         style={{
-          "--arena-image": `url('/assets/${district.background}.webp')`,
+          "--arena-image": `url('${assetUrl(`assets/${district.background}.webp`)}')`,
         }}
       />
       <div className="arena-vignette" />

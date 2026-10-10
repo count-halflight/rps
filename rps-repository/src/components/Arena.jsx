@@ -5,6 +5,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { cinematicFrame } from "../game/cinematics";
 import { pulseRate } from "../game/calculus";
+import { assetUrl } from "../game/assets";
 
 export default function Arena({
   weapon,
@@ -232,7 +233,7 @@ export default function Arena({
       if (pendingFrames.has(detail)) return;
       pendingFrames.add(detail);
       new GLTFLoader().load(
-        light ? "/models/echo-frame-low.glb" : "/models/echo-frame.glb",
+        assetUrl(light ? "models/echo-frame-low.glb" : "models/echo-frame.glb"),
         (gltf) => {
           pendingFrames.delete(detail);
           templates.set(detail, gltf);

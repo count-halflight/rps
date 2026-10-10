@@ -57,6 +57,10 @@ The production build creates an installable web app and caches the game, models,
 
 ## Free static hosting
 
+GitHub Pages is configured through `.github/workflows/pages.yml`. In the repository's **Settings → Pages**, select **GitHub Actions** as the source. The **Publish game** workflow builds, tests, and deploys updates from `main`. The game URL is `https://count-halflight.github.io/rps/`. If the initial workflow ran before Pages was enabled, rerun it from the Actions tab.
+
+The Pages build uses `VITE_BASE_PATH=/rps/`, including model loading, arena images, the app manifest, and offline caching. To check that build locally, run `VITE_BASE_PATH=/rps/ npm run build:static` and `VITE_BASE_PATH=/rps/ npm run preview`, then open the preview's `/rps/` path. Root-domain hosting keeps its default `/` base.
+
 The repository includes root configuration for Netlify and Vercel. Import the `count-halflight/rps` repository into an existing hosting account. Both configurations build `rps-repository` and publish its static output. Static hosting uses local rival stories and needs no API key.
 
 For a manual upload, run `npm run build:static`, sign into [Netlify Drop](https://app.netlify.com/drop), and drag the `dist/` folder onto the page. If using the prepared ZIP, extract it first and upload the folder containing `index.html`. Netlify provides the public HTTPS game link. This route does not require GitHub access or an API key. To keep the normal server build intact while preparing an upload, use `npm run build:static -- --outDir artifacts/static`.

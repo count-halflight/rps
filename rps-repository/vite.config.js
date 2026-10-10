@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import offlinePlugin from "./scripts/offline-plugin.mjs";
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH || "/",
   plugins: [offlinePlugin()],
   server: {
     proxy: {
