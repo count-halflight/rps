@@ -1968,5 +1968,10 @@
       },
       "sheet": "kuro.png"
     }
-  ]
+  ],
+  "archive": {
+    "releaseCommit": "8a253c78c9bf738b97f2244f7f9ab47bc3498607",
+    "description": "Previous published release archive. These captures do not represent the unfinished Ultra rebuild.",
+    "captureDate": null
+  }
 }

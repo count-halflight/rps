@@ -4,6 +4,7 @@ import { ATTACK_CATALOG } from '../src/game/attackCatalog.js';
 import { attackPresentation, cinematicFrame, cinematicCue } from '../src/game/cinematics.js';
 import { createQteTrack, pressQte, expireQtes, qteScore, qteCharge } from '../src/game/qte.js';
 import { newRun, levelFor, WEAPONS, counterFor, openingFor, resolveTurn, loadSave } from '../src/game/engine.js';
+import {canonicalSequenceId,sequenceById} from '../src/game/sequences/index.js';
 
 function earnedOpening(character, hand, level, turn) {
   const run = newRun(417, null, character);
@@ -50,7 +51,11 @@ test('Both finale families remain reachable through seeded earned openings in ev
       }
     }
   }
-  assert.deepEqual(reachable, new Set(ATTACK_CATALOG.filter(sequence => sequence.final).map(sequence => sequence.id)));
+  const expected=ATTACK_CATALOG.filter(sequence=>sequence.final).map(sequence=>{
+    const canonical=canonicalSequenceId(sequence.character,sequence.weapon,0,true);
+    return !sequence.finisherIndex&&sequenceById(canonical)?canonical:sequence.id;
+  });
+  assert.deepEqual(reachable, new Set(expected));
   assert.equal(reachable.size, 30);
 });
 
@@ -61,7 +66,7 @@ test('Perfect and failed inputs branch choreography without cancelling any earne
     const failed = resolveTrack(presentation, false);
     assert.ok(correct.every(cue => cue.status === 'hit'), sequence.id);
     assert.ok(failed.every(cue => cue.status === 'missed'), sequence.id);
-    assert.equal(qteCharge(correct), sequence.final ? 6 : 3);
+    assert.equal(qteCharge(correct), cinematicCue(presentation.sequenceId).length*3);
     assert.equal(qteCharge(failed), 0);
     for (const [track, branch] of [[correct, 'perfect'], [failed, 'strained']]) {
       const animation = { ...presentation, playerWeapon: sequence.weapon, outcome: 'win', finalHit: sequence.final, qte: track, qteSuccess: qteScore(track, true) };

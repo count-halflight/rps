@@ -21,7 +21,7 @@ export default function SettingsDialog({
   return (
     <Modal
       title="Settings"
-      eyebrow="Sound & display"
+      eyebrow="Sound · display · accessibility"
       onClose={onClose}
       className="settings-modal"
     >
@@ -83,9 +83,10 @@ export default function SettingsDialog({
         </div>
         <div className="setting-options">
           {[
-            ["auto", "Adaptive"],
-            ["high", "Full detail"],
-            ["low", "Lightweight"],
+            ["auto", "Auto"],
+            ["high", "High"],
+            ["medium", "Medium"],
+            ["low", "Light"],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -120,6 +121,39 @@ export default function SettingsDialog({
             </button>
           ))}
         </div>
+      </div>
+      <div className="setting-row">
+        <div>
+          <h3>Reduce flashes</h3>
+          <p>Recommended. Impacts use soft light dips instead of bright flashes.</p>
+        </div>
+        <button className={`setting-toggle ${preferences.reduceFlashes ? 'on' : ''}`}
+          aria-pressed={preferences.reduceFlashes} aria-label="Toggle reduced flashes"
+          onClick={() => update('reduceFlashes', !preferences.reduceFlashes)}><span /></button>
+      </div>
+      <div className="setting-row setting-stacked">
+        <div>
+          <h3>Cinematic length</h3>
+          <p>Short keeps the key poses and impact. Full plays every shot.</p>
+        </div>
+        <div className="setting-options">
+          {['full', 'short'].map(length => <button key={length}
+            aria-pressed={preferences.cinematicLength === length}
+            className={preferences.cinematicLength === length ? 'selected' : ''}
+            onClick={() => update('cinematicLength', length)}>
+            {length === 'full' ? 'Full' : 'Short'}
+            {preferences.cinematicLength === length && <Check size={13} />}
+          </button>)}
+        </div>
+      </div>
+      <div className="setting-row">
+        <div>
+          <h3>Haptics</h3>
+          <p>Impact vibrations on supported devices.</p>
+        </div>
+        <button className={`setting-toggle ${preferences.haptics ? 'on' : ''}`}
+          aria-pressed={preferences.haptics} aria-label="Toggle haptics"
+          onClick={() => update('haptics', !preferences.haptics)}><span /></button>
       </div>
       <div className="setting-row">
         <div>

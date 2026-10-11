@@ -15,6 +15,8 @@ Each image retains its native 1672 × 941 resolution. Runtime WebP copies were e
 
 The images are included under the project MIT license below. There are no additional stock-image fees, subscriptions, or third-party attribution requirements for these project-generated files. Fonts, the MakeHuman base, and code dependencies have their separate notices in this directory.
 
+The Black Tide harbour's three-dimensional stone pier, funeral barge hulls, pointed cloister arches, wrought iron, chain hoist, mortuary stores, mooring ropes and flooded abbey skyline are original procedural geometry authored for this project in `src/components/environments/blackTide.js`. Its stone, wood, steel, roughness, relief and water-normal textures are deterministic original surface fields generated locally by that module. They do not use an external texture pack or require network downloads. These geometry and surface definitions share the project MIT license. The earlier Docks image is disabled for this gothic three-dimensional slice.
+
 MIT License
 
 Copyright (c) 2026 Trinity contributors

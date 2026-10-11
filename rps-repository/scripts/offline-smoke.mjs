@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdir,writeFile,readdir } from "node:fs/promises";
+import { mkdir,writeFile,readdir,readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { launchBrowser,delay } from "./browser.mjs";
 import { newRun } from "../src/game/engine.js";
 import { spawnSync } from 'node:child_process';
@@ -20,13 +21,22 @@ try {
   await b.waitFor("document.querySelector('.start-button')");
   await b.waitFor("navigator.serviceWorker.controller", 40000);
   const report = await b.evaluate(
-    `(async()=>{const names=await caches.keys(),c=await caches.open(names.find(n=>n.startsWith('trinity-'))),files=(await c.keys()).map(r=>new URL(r.url).pathname);return {files};})()`,
+    `(async()=>{const names=await caches.keys(),c=await caches.open(names.find(n=>n.startsWith('trinity-'))),files=(await c.keys()).map(r=>r.url);return {files};})()`,
   );
-  for (const name of ["echo", "ronin", "brawler", "nyx", "vex"])
-    assert.ok(
-      report.files.some((f) => f.endsWith(`/models/${name}-human.glb`)),
-    );
-  pass("All five fighter assets are cached");
+  const cachedUrls = report.files.map(file => new URL(file));
+  const versionedModels = [
+    ...["echo", "ronin", "brawler", "nyx", "vex"].map(name => `${name}-human.glb`),
+    "echo-reflections.json", ...["high", "medium", "light"].map(tier => `echo-reflections-${tier}.bin`),
+  ];
+  for (const name of versionedModels) {
+    const entries = cachedUrls.filter(file => file.pathname.endsWith(`/models/${name}`));
+    assert.equal(entries.length, 1, `${name} has one exact versioned cache entry`);
+    const version = entries[0].searchParams.get("v") || "";
+    assert.match(version, /^[a-f0-9]{64}$/, `${name} has a SHA-256 content version`);
+    const actual = createHash("sha256").update(await readFile(`public/models/${name}`)).digest("hex");
+    assert.equal(version, actual, `${name} cache version matches the current asset bytes`);
+  }
+  pass("All five fighters and all baked reflection assets are cached with current content versions");
   const scenery=(await readdir('public/art')).filter(name=>name.endsWith('.webp'));
   assert.equal(scenery.length,6,'six individual district backgrounds');
   for(const name of scenery)assert.ok(report.files.some(path=>path.endsWith(`/art/${name}`)),name+' must be cached');
@@ -39,7 +49,7 @@ try {
     `localStorage.setItem('trinity-save-v1',${JSON.stringify(JSON.stringify(r))});localStorage.setItem('trinity-preferences-v1',JSON.stringify({quality:'low',motion:'reduced',liveDossiers:false}));`,
   );
   await b.navigate(new URL('proof/index.html',url).href);
-  await b.waitFor("document.title==='Trinity choreography proof' && navigator.serviceWorker.controller");
+  await b.waitFor("document.querySelector('#desktop') && navigator.serviceWorker.controller");
   await b.call("Network.emulateNetworkConditions", {
     offline: true,
     latency: 0,

@@ -1,9 +1,8 @@
+import { createTexturedGltfLoader } from "./helpers/texturedGltfLoader.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { createRiggedFighter } from "../src/components/riggedFighter.js";
 import { FIGHTERS } from "../src/game/fighters.js";
 import { attackPresentation, cinematicFrame } from "../src/game/cinematics.js";
@@ -13,7 +12,7 @@ test("all shipped human assets load, articulate, and retain finite bounds throug
     const bytes = await readFile(
       new URL(`../public/models/${name}-human.glb`, import.meta.url),
     );
-    const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parseAsync(
+    const gltf = await createTexturedGltfLoader().parseAsync(
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
       "",
     );

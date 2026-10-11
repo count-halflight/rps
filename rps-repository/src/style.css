@@ -1,5 +1,6 @@
 @layer legacy;
 @import "./arcade.css";
+@import "./game-ui.css";
 
 @layer legacy {
 :root {

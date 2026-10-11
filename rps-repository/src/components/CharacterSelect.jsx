@@ -47,6 +47,7 @@ export default function CharacterSelect({
             enemyLevel={1}
             quality={preferences.quality}
             reducedMotion={preferences.motion === "reduced"}
+            reduceFlashes={preferences.reduceFlashes}
           />
         </Suspense>
         <div className="selection-stage-trim" aria-hidden="true"><i /><i /><i /></div>

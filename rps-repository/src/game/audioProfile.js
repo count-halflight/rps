@@ -9,8 +9,8 @@ export function battleSoundProfile(enemyIntegrity = 1, playerIntegrity = 1) {
     bpm: 84 + intensity * 72,
     musicGain: 0.8 + intensity * 0.65,
     cutoff: 220 + Math.pow(player, 1.7) * 3200,
-    heartbeatBpm: 80 + (1 - player) * 65,
-    heartbeatGain: player < 0.45 ? (1 - player / 0.45) * 0.075 : 0,
+    heartbeatBpm: 80 + (1 - player) * 40,
+    heartbeatGain: player < 0.30 ? (1 - player / 0.30) * 0.075 : 0,
   };
 }
 
@@ -76,46 +76,46 @@ export function choreographySoundProfile(animation = {}) {
 // instrumentation and phrasing instead of a transposed copy of one loop.
 export const DISTRICT_SCORES = [
   {
-    name: 'Rain on the line', root: 38, bpm: 102, swing: .12,
+    name: 'Cathedral rain', root: 38, bpm: 102, swing: .12,
     scale: [0, 2, 3, 5, 7, 8, 10], chords: [0, 5, 3, 6], chord: [0, 3, 7, 10],
     bass: [0, -1, 0, 4, -1, 0, 2, -1], lead: [7, -1, 9, 8, 4, -1, 6, 4, 7, 11, -1, 9, 8, -1, 6, 4],
     kick: [0, 3, 6], snare: [2, 6], hats: [0, 1, 2, 3, 4, 5, 6, 7],
-    bassWave: 'triangle', leadWave: 'sine', voice: 'rain',
+    bassWave: 'triangle', leadWave: 'sine', voice: 'rain', organ: .8, strings: .55, celesta: .75,
   },
   {
-    name: 'Red furnace', root: 41, bpm: 121, swing: 0,
+    name: 'Furnace liturgy', root: 41, bpm: 121, swing: 0,
     scale: [0, 1, 3, 5, 7, 8, 10], chords: [0, 1, 0, 5], chord: [0, 3, 7],
     bass: [0, 0, -1, 1, 0, 0, 4, -1], lead: [7, 7, -1, 8, 7, 4, -1, 3, 7, -1, 11, 8, 7, 4, 3, -1],
     kick: [0, 2, 4, 6], snare: [2, 6], hats: [0, 2, 3, 4, 6, 7],
-    bassWave: 'sawtooth', leadWave: 'triangle', voice: 'kiln',
+    bassWave: 'sawtooth', leadWave: 'triangle', voice: 'kiln', organ: 1, strings: .75, celesta: .1,
   },
   {
-    name: 'Glass orbits', root: 39, bpm: 88, swing: .025,
-    scale: [0, 2, 4, 6, 7, 9, 11], chords: [0, 2, 5, 4], chord: [0, 4, 7, 11],
+    name: 'Glass requiem', root: 39, bpm: 88, swing: .025,
+    scale: [0, 2, 3, 5, 7, 8, 11], chords: [0, 2, 5, 4], chord: [0, 3, 7, 11],
     bass: [0, -1, -1, 4, -1, 2, -1, -1], lead: [7, -1, 11, -1, 9, -1, 8, 4, 7, 9, -1, 13, 11, -1, 9, -1],
     kick: [0, 5], snare: [4], hats: [0, 2, 5, 7],
-    bassWave: 'sine', leadWave: 'sine', voice: 'prism',
+    bassWave: 'sine', leadWave: 'sine', voice: 'prism', organ: .35, strings: .35, celesta: 1,
   },
   {
-    name: 'Lantern runners', root: 45, bpm: 113, swing: .18,
+    name: 'Lantern procession', root: 45, bpm: 113, swing: .18,
     scale: [0, 2, 3, 5, 7, 8, 11], chords: [0, 3, 5, 4], chord: [0, 3, 7, 9],
     bass: [0, -1, 2, -1, 4, 0, -1, 6], lead: [7, -1, 8, 11, -1, 9, 7, -1, 6, 4, -1, 7, 8, -1, 11, 9],
     kick: [0, 3, 5], snare: [2, 6], hats: [1, 2, 3, 5, 6, 7],
-    bassWave: 'triangle', leadWave: 'triangle', voice: 'market',
+    bassWave: 'triangle', leadWave: 'triangle', voice: 'market', organ: .5, strings: .8, celesta: .45,
   },
   {
-    name: 'Roots in the wires', root: 36, bpm: 96, swing: .07,
+    name: 'Root vesper', root: 36, bpm: 96, swing: .07,
     scale: [0, 2, 3, 5, 7, 9, 10], chords: [0, 5, 2, 0], chord: [0, 3, 7],
     bass: [0, -1, 0, -1, 4, -1, 2, 0], lead: [7, -1, 9, 7, -1, 4, 2, -1, 7, 9, 11, -1, 9, 7, -1, 4],
     kick: [0, 4, 7], snare: [3, 6], hats: [0, 3, 4, 6],
-    bassWave: 'sine', leadWave: 'triangle', voice: 'root',
+    bassWave: 'sine', leadWave: 'triangle', voice: 'root', organ: .75, strings: .4, celesta: .25,
   },
   {
-    name: 'Undertow', root: 35, bpm: 144, swing: .04,
+    name: 'Drowned choir', root: 35, bpm: 144, swing: .04,
     scale: [0, 2, 3, 5, 7, 8, 10], chords: [0, 5, 3, 4], chord: [0, 3, 7, 10],
     bass: [0, -1, 4, 0, -1, 6, 4, -1], lead: [11, 9, -1, 7, 8, -1, 9, 4, 7, -1, 11, 13, 11, 9, -1, 8],
     kick: [0, 3, 4], snare: [2, 6], hats: [0, 1, 2, 3, 4, 5, 6, 7],
-    bassWave: 'sawtooth', leadWave: 'sine', voice: 'tide',
+    bassWave: 'sawtooth', leadWave: 'sine', voice: 'tide', organ: .55, strings: 1, celesta: .5,
   },
 ];
 const SCORE_SECTIONS = [
@@ -129,6 +129,22 @@ const SCORE_SECTIONS = [
 export function scoreForFloor(floor = 1) {
   const level = Math.max(1, Math.floor(Number.isFinite(floor) ? floor : 1));
   return { ...DISTRICT_SCORES[(level - 1) % 6], variation: Math.floor((level - 1) / 6) };
+}
+
+// Quiet original scene textures sit beneath the score. They share its low-pass
+// and cinematic duck, so danger muffling and authored silence affect the world
+// as well as the instruments. Levels are deliberately below musical transients.
+const DISTRICT_AMBIENCE = [
+  { name: 'Rain and distant rail', texture: 'rain', filter: 'lowpass', cutoff: 3600, gain: .022 },
+  { name: 'Furnace breath', texture: 'furnace', filter: 'lowpass', cutoff: 410, gain: .026 },
+  { name: 'Vault resonances', texture: 'vault', filter: 'lowpass', cutoff: 850, gain: .020 },
+  { name: 'Night market murmur', texture: 'market', filter: 'bandpass', cutoff: 590, gain: .024 },
+  { name: 'Signal static', texture: 'signal', filter: 'highpass', cutoff: 1600, gain: .020 },
+  { name: 'Harbor swell', texture: 'harbor', filter: 'lowpass', cutoff: 650, gain: .027 },
+];
+export function ambienceForFloor(floor = 1) {
+  const level = Math.max(1, Math.floor(Number.isFinite(floor) ? floor : 1));
+  return { ...DISTRICT_AMBIENCE[(level - 1) % DISTRICT_AMBIENCE.length] };
 }
 export function scoreSection(bar = 0) {
   let current = ((Math.floor(bar) % 28) + 28) % 28;

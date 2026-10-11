@@ -1,4 +1,5 @@
 import { fighterFor } from './fighters.js';
+export {SEQUENCE_MANIFEST,canonicalSequenceId} from './sequences/manifest.js';
 
 // Authored sequence rows: duration, impact, wind-up, contact, root path,
 // camera rig, effect recipe and reaction. Sharing anatomical pose vocabulary

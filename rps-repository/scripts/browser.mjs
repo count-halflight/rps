@@ -151,7 +151,7 @@ export async function launchBrowser() {
   };
   const boundsFor = (selector) =>
     evaluate(
-      `(async()=>{await document.fonts.ready;const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw new Error('Missing button');e.scrollIntoView({block:'center',behavior:'instant'});const r=e.getBoundingClientRect();const x=r.x+r.width/2,y=r.y+r.height/2;if(!e.contains(document.elementFromPoint(x,y)))throw new Error('Button is covered: '+${JSON.stringify(selector)});return {x,y};})()`,
+      `(async()=>{await Promise.race([document.fonts.ready,new Promise(resolve=>setTimeout(resolve,2000))]);const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw new Error('Missing button');e.scrollIntoView({block:'center',behavior:'instant'});const r=e.getBoundingClientRect();const x=r.x+r.width/2,y=r.y+r.height/2;if(!e.contains(document.elementFromPoint(x,y)))throw new Error('Button is covered: '+${JSON.stringify(selector)});return {x,y};})()`,
     );
   const click = async (selector) => {
     const bounds = await boundsFor(selector);
@@ -222,5 +222,6 @@ export async function launchBrowser() {
     reload,
     errors,
     requests,
+    diagnostics: () => output.slice(-6000),
   };
 }

@@ -76,8 +76,9 @@ test('normal and final attacks cut through four directed shots; reduced motion k
     const reduced={...a,reduced:true};
     assert.deepEqual(cinematicFrame(reduced,.3).camera,cinematicFrame(reduced,1).camera);
     if(final){
-      assert.ok(frame(.37).secondaryImpact>.9);
-      assert.equal(frame(.37).collapse,0);
+      const setup=a.contacts.find(([at])=>at>0&&at<a.impactAt)[0];
+      assert.ok(frame(setup).secondaryImpact>.9);
+      assert.equal(frame(setup).collapse,0);
       assert.ok(frame(.95).collapse>.95);
     }
   }

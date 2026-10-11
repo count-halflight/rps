@@ -2,6 +2,7 @@ import { fighterFor } from './fighters.js';
 import { ATTACK_CATALOG, BOSS_SEQUENCES, FINISHER_STAGING, NORMAL_CONTACTS, sequenceFor } from './attackCatalog.js';
 import { POSE_KEYS, ROOT_PATHS } from './poseKeys.js';
 import { CAMERA_RIGS } from './cameraRigs.js';
+import {canonicalSequenceId,sequenceById,presentationForSequenceId,evaluateSequence} from './sequences/index.js';
 export const ATTACKS = {
  rock:{name:'Faultline',finisher:'Citybreaker',color:'#83ffd6',moves:['Knuckle rush','Skyfall','Faultline']},
  paper:{name:'Phase bloom',finisher:'Zero horizon',color:'#d0bcff',moves:['Integral bloom','Gravity well','Ribbon snare']},
@@ -16,6 +17,8 @@ const DEFAULT={rock:'cinder',paper:'nyx',scissors:'echo'};
 // QTE input is resolved by the controller using the same startedAt clock as the
 // arena. Failed prompts alter the stunt branch, never reverse an earned RPS win.
 export function cinematicCue(sequenceId){
+ const authored=sequenceById(sequenceId);
+ if(authored)return authored.qteCues.map(c=>({...c}));
  const final=FINISHER_STAGING[sequenceId];
  if(final)return final.cues.map(c=>({...c}));
  const s=ATTACK_CATALOG.find(a=>a.id===sequenceId);if(!s)return [];
@@ -23,8 +26,14 @@ export function cinematicCue(sequenceId){
  const index=['echo','cinder','nyx','vex','kuro'].indexOf(s.character)+['rock','paper','scissors'].indexOf(s.weapon)+s.variant;
  return [{id:'contact',key:String(index%3+1),at:s.variant===2?.15:.075,end:Math.min(s.impact-.07,s.variant===2?.49:.45),label:labels[s.character][s.weapon][s.variant]}];
 }
-export function attackPresentation(weapon,finisher=false,reduced=false,variant=0,character=null,signature=null,finisherIndex=0){
+export function attackPresentation(weapon,finisher=false,reduced=false,variant=0,character=null,signature=null,finisherIndex=0,options={}){
  const f=fighterFor(character||DEFAULT[weapon]);
+ const canonical=signature&&sequenceById(signature)?signature:canonicalSequenceId(f.id,weapon,variant,finisher,options.bossKill||options.finale);
+ // Explicit legacy signatures/alternate finishers remain available during the
+ // reviewed vertical slice. Unauthored IDs never borrow a renamed timeline.
+ if(sequenceById(canonical)&&(!signature||sequenceById(signature))&&!finisherIndex){
+  return presentationForSequenceId(canonical,{...options,reduced,variant:sequenceById(canonical).variant});
+ }
  const s=BOSS_SEQUENCES.find(b=>b.id===signature)||sequenceFor(f.id,weapon,variant,finisher,finisherIndex);
  return {finisher,reduced,variant:s.variant??variant%3,character:f.id,style:f.style,
   duration:reduced?(finisher?1700:1100):s.duration,impactAt:s.impact,revealAt:.025,
@@ -225,6 +234,7 @@ function reactionPose(type,p,hit,final,finalHit,brace){
  r.y-=.92*collapse;r.roll-=1.35*collapse;return{defender:r,collapse,release,contactFlinch};
 }
 export function cinematicFrame(animation,seconds){
+ if(sequenceById(animation.sequenceId))return evaluateSequence(animation.sequenceId,seconds,animation);
  const s=descriptor(animation),p=clamp(seconds/(animation.duration/1000)),hit=animation.impactAt??s.impact;
  const stop=(animation.hitStop||45)/animation.duration;
  // Freeze only the physical pose; damage, audio and UI continue on the public timeline.

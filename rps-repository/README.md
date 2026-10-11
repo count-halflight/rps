@@ -2,7 +2,9 @@
 
 [Play on GitHub Pages](https://count-halflight.github.io/rps/)
 
-This validated, stylized playable upgrade has a completed 75-attack capture gallery, passing production and `/rps/` static builds, and 80 passing tests. All local checks are complete, including offline and no-WebGL play. See the [current upgrade report](docs/cinematic-upgrade.md) and [125-file change manifest](docs/changed-files-upgrade.md). The [earlier rebuild report](docs/rebuild-report.md) records the previous preview and its art limitations.
+This playable preview adds the gothic Echo/Docks slice, authored reflection strikes, a revised game HUD and district ambience. The full Ultra rebuild remains unfinished: four canonical attacks are authored out of a planned 65, and the visual slice has not passed its art acceptance gate. The user explicitly authorized publishing the current preview and continuing the remaining work later. See the [current project state](docs/ultra-project-state.md) and [actual rendered review](docs/ultra-phase-a-review.md). The verification claims below describe the previous published release.
+
+The previous published upgrade has a completed 75-attack capture gallery, passing production and `/rps/` static builds, and 80 passing tests. Its local checks include offline and no-WebGL play. See the [previous published upgrade report](docs/cinematic-upgrade.md) and [125-file change manifest](docs/changed-files-upgrade.md). The [earlier rebuild report](docs/rebuild-report.md) records the previous preview and its art limitations.
 
 [Desktop screenshots](https://count-halflight.github.io/rps/proof/#desktop) · [Finisher gallery](https://count-halflight.github.io/rps/proof/#finishers) · [Latest deployment](https://github.com/count-halflight/rps/actions/workflows/pages.yml).
 

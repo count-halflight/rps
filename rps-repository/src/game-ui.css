@@ -1,0 +1,753 @@
+/* Combat instruments: iron, aged brass and glass, arranged over the world. */
+.app-shell {
+  --hud-brass: #b39a68;
+  --hud-bone: #e9dfc5;
+  --hud-ink: #080a10;
+  --hud-muted: #b5ae99;
+  font-family: "Barlow Condensed", sans-serif;
+}
+
+.app-shell .game-surface:not(:has(.is-attacking)) .battle-stage {
+  bottom: 0;
+}
+
+.app-shell .film-shade {
+  background:
+    linear-gradient(#020409ae, transparent 21%, transparent 65%, #03050cc4),
+    radial-gradient(ellipse at 50% 43%, transparent 48%, #06050b42);
+}
+
+.app-shell .fight-hud {
+  top: 51px;
+  left: 4%;
+  right: 4%;
+  gap: clamp(16px, 2.3vw, 40px);
+  grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
+  filter: drop-shadow(0 3px 4px #0009);
+}
+
+.app-shell .health-side,
+.app-shell .health-side.rival {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 2px 0 0 60px;
+}
+
+.app-shell .health-side.rival {
+  padding: 2px 60px 0 0;
+}
+
+.app-shell .health-side:before,
+.app-shell .health-side:after {
+  width: auto;
+  height: auto;
+  border: 0;
+}
+
+.app-shell .health-side:before {
+  inset: -5px 0 -6px 48px;
+  background: linear-gradient(90deg, #080b1291, transparent 90%);
+  z-index: -1;
+}
+
+.app-shell .health-side.rival:before {
+  inset: -5px 48px -6px 0;
+  background: linear-gradient(270deg, #080b1291, transparent 90%);
+}
+
+.app-shell .health-side:after {
+  top: 36px;
+  left: 50px;
+  bottom: auto;
+  right: -4px;
+  height: 20px;
+  border-top: 1px solid #d0b6813b;
+  border-bottom: 1px solid #d0b68121;
+  clip-path: polygon(0 0, 100% 0, 100% 75%, 99% 100%, 1% 100%, 0 75%);
+}
+
+.app-shell .health-side.rival:after {
+  left: -4px;
+  right: 50px;
+}
+
+.app-shell .kit-portrait {
+  top: 0;
+  left: 0;
+  width: 46px;
+  height: 57px;
+  padding: 3px 1px 0;
+  border: 1px solid #b19a686f;
+  border-top: 2px solid #c3af7d;
+  border-radius: 46% 46% 10% 10% / 24% 24% 9% 9%;
+  background: radial-gradient(ellipse at 50% 22%, #45403b, #10121a 80%);
+  filter: saturate(.58) drop-shadow(0 2px 3px #0009);
+}
+
+.app-shell .rival .kit-portrait {
+  left: auto;
+  right: 0;
+}
+
+.app-shell .fighter-name {
+  gap: 12px;
+  margin-bottom: 7px;
+  min-height: 28px;
+  overflow: visible;
+  align-items: baseline;
+}
+
+.app-shell .fighter-name b {
+  color: var(--hud-bone);
+  font: 400 clamp(23px, 2.4vw, 34px)/.94 "Pirata One", serif;
+  letter-spacing: .15px;
+}
+
+.app-shell .fighter-name span {
+  font: 500 13px/1.1 "Barlow Condensed", sans-serif;
+  color: #c0b9a2;
+  letter-spacing: .2px;
+}
+
+.app-shell .life-bar,
+.app-shell .rival .life-bar {
+  height: 14px;
+  transform: none;
+  border: 1px solid #bda57591;
+  border-top-color: #e0c69396;
+  border-bottom-color: #52482f;
+  background: #090b10e8;
+  box-shadow: 0 2px 0 #030508, inset 0 1px 4px #000;
+  clip-path: polygon(0 0, 99% 0, 100% 50%, 99% 100%, 0 100%);
+}
+
+.app-shell .rival .life-bar {
+  clip-path: polygon(1% 0, 100% 0, 100% 100%, 1% 100%, 0 50%);
+}
+
+.app-shell .life-bar i {
+  background: linear-gradient(#dce4cf 0%, #87ad94 22%, #597c72 61%, #435854 100%);
+}
+
+.app-shell .rival .life-bar i {
+  background: linear-gradient(#e8d4b4 0%, #bd8a81 22%, #8f4b54 61%, #5e303d 100%);
+}
+
+.app-shell .life-bar:after {
+  background: repeating-linear-gradient(90deg, transparent 0 calc(20% - 1px), #080c1240 calc(20% - 1px) 20%);
+  box-shadow: inset 0 1px #ffffff21;
+}
+
+.app-shell .life-bar .ghost-hp,
+.app-shell .rival .life-bar .ghost-hp {
+  background: #d3ae70;
+  opacity: .8;
+}
+
+.app-shell .low-health .life-bar {
+  border-color: #d69575;
+}
+
+.app-shell .health-side > small {
+  font: 600 11px/1 "Barlow Condensed", sans-serif;
+  letter-spacing: .55px;
+  padding-top: 7px;
+  color: #bdb6a2;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-shell .round-mark {
+  min-height: 79px;
+  margin-top: -8px;
+  padding-top: 11px;
+  position: relative;
+  background: radial-gradient(ellipse at 50% 40%, #191820b9, transparent 70%);
+}
+
+.app-shell .round-mark:before {
+  content: "";
+  position: absolute;
+  inset: 1px 5px 2px;
+  border: 1px solid #b39a685f;
+  border-radius: 50% 50% 48% 48% / 33% 33% 67% 67%;
+  transform: rotate(0deg);
+  box-shadow: inset 0 0 0 4px #0a0b100f;
+  pointer-events: none;
+}
+
+.app-shell .round-mark:after {
+  content: "";
+  position: absolute;
+  height: 7px;
+  width: 7px;
+  top: -3px;
+  left: calc(50% - 3.5px);
+  border: 1px solid #c6ad74;
+  background: #111119;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.app-shell .round-mark span {
+  font: 500 11px/1 "Barlow Condensed", sans-serif;
+  text-transform: none;
+  letter-spacing: 1.1px;
+  color: #b5a57e;
+}
+
+.app-shell .round-mark b {
+  font: 400 49px/.97 "Pirata One", serif;
+  color: #f0e1bc;
+  letter-spacing: -1px;
+  margin-top: 3px;
+}
+
+.app-shell .round-mark small {
+  font: 600 10px/1 "Barlow Condensed", sans-serif;
+  color: #c3b38c;
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-shell .round-mark small:before {
+  content: "turn ";
+  font-weight: 500;
+  color: #9b8e70;
+}
+
+.app-shell .boss-hud .rival {
+  padding: 2px 0 0 60px;
+}
+
+.app-shell .boss-hud .rival .kit-portrait {
+  left: 0;
+  right: auto;
+}
+
+.app-shell .boss-hud .rival:before {
+  inset: -5px 0 -6px 48px;
+  background: linear-gradient(90deg, #080b1291, transparent 90%);
+}
+
+.app-shell .boss-hud .rival:after {
+  left: 50px;
+  right: -4px;
+}
+
+.app-shell .boss-hud .rival .life-bar {
+  height: 14px;
+  transform: none;
+  clip-path: polygon(0 0, 99.6% 0, 100% 50%, 99.6% 100%, 0 100%);
+}
+
+.app-shell .boss-hud .rival .fighter-name {
+  padding-right: 75px;
+}
+
+.app-shell .boss-hud .rival > small {
+  top: 7px;
+  right: 8px;
+  padding: 0;
+}
+
+.app-shell .game-tools {
+  left: 4%;
+  right: 4%;
+  top: 8px;
+}
+
+.app-shell .game-tools button {
+  font: 500 13px/1 "Barlow Condensed", sans-serif;
+  min-height: 32px;
+  color: #b9b09c;
+  padding: 5px 0;
+}
+
+.app-shell .game-tools .menu-button,
+.app-shell .game-tools .menu-button span {
+  font: 500 13px/1 "Barlow Condensed", sans-serif !important;
+}
+
+.app-shell .game-tools button:hover:not(:disabled) {
+  color: #efdfb8;
+}
+
+.app-shell .stage-location {
+  left: 4%;
+  bottom: calc(var(--console-height, 150px) + 17px);
+  padding: 0 0 0 13px;
+  border-left: 1px solid #ad905767;
+  opacity: .88;
+}
+
+.app-shell .stage-location b {
+  font: 400 24px/1.15 "Pirata One", serif;
+  color: #d8cbae;
+}
+
+.app-shell .stage-location span,
+.app-shell .stage-location small {
+  font: 500 11px/1.25 "Barlow Condensed", sans-serif;
+  color: #b5b09f;
+  letter-spacing: .3px;
+}
+
+.app-shell .battle-stage.is-attacking .stage-location,
+.app-shell .game-surface.is-introducing .stage-location {
+  opacity: 0;
+}
+
+.app-shell .perk-loadout {
+  top: 130px;
+}
+
+.app-shell .combat-console {
+  min-height: 139px;
+  padding: 14px max(4%, calc((100vw - 880px) / 2)) 13px;
+  background: linear-gradient(transparent, #05070d52 65%, #05070d9c);
+}
+
+.app-shell .combat-console:before {
+  inset: 4px max(2%, calc((100vw - 926px) / 2)) 7px;
+  background:
+    linear-gradient(90deg, transparent, #b49d6947 12%, #b49d6947 88%, transparent) top center / 100% 1px no-repeat,
+    linear-gradient(180deg, #13151ddc, #090c15d9);
+  border: 0;
+  clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px);
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.app-shell .combat-console:after {
+  content: "";
+  position: absolute;
+  inset: auto max(2%, calc((100vw - 926px) / 2)) 7px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #b29b603b 17%, #b29b603b 83%, transparent);
+  pointer-events: none;
+}
+
+.app-shell .combat-read,
+.app-shell .combat-foot,
+.app-shell .earned-actions {
+  max-width: 816px;
+}
+
+.app-shell .combat-read {
+  font: 500 14px/1.1 "Barlow Condensed", sans-serif;
+  color: #cfc5ae;
+  margin-bottom: 12px;
+}
+
+.app-shell .enemy-tell {
+  gap: 6px;
+}
+
+.app-shell .enemy-tell > svg {
+  width: 19px;
+  height: 19px;
+  padding: 3px;
+  background: conic-gradient(#b2a06f var(--tell-confidence), #493f3338 0);
+  outline-color: #b7a16f26;
+}
+
+.app-shell .enemy-tell > span {
+  color: #a5a08f;
+  font-size: 12px;
+}
+
+.app-shell .enemy-tell b {
+  font-size: 14px;
+  color: #d7c69d;
+}
+
+.app-shell .enemy-tell small {
+  font-size: 11px;
+  color: #aba38f;
+}
+
+.app-shell .loadout-row {
+  max-width: 722px;
+}
+
+.app-shell .weapon-loadout {
+  gap: 14px;
+}
+
+.app-shell .weapon-card {
+  min-height: 65px;
+  padding: 9px 17px;
+  gap: 13px;
+  border: 1px solid #91805b70;
+  border-top-color: #c7b07c82;
+  border-bottom: 2px solid #343027;
+  transform: none;
+  background: linear-gradient(165deg, #292a306e, #11151e75 75%);
+  box-shadow: inset 0 1px #f3dca510, 0 3px 7px #0004;
+  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 9px 100%, 0 calc(100% - 9px), 0 9px);
+}
+
+.app-shell .weapon-card > svg,
+.app-shell .weapon-card > div {
+  transform: none;
+}
+
+.app-shell .weapon-card > svg {
+  height: 35px;
+  width: 35px;
+  color: #c7b890;
+  animation: none;
+}
+
+.app-shell .weapon-card b {
+  font: 400 26px/1 "Pirata One", serif;
+  letter-spacing: .2px;
+  color: #e3d6b8;
+}
+
+.app-shell .weapon-card small {
+  margin-top: 4px;
+  font: 500 11px/1 "Barlow Condensed", sans-serif;
+  color: #b1ab98;
+  letter-spacing: .15px;
+}
+
+.app-shell .weapon-card .weapon-key {
+  top: 6px;
+  left: 8px;
+  padding: 0;
+  border: 0;
+  color: #a59778;
+  font: 600 10px/1 "Barlow Condensed", sans-serif;
+}
+
+.app-shell .weapon-card.selected {
+  border-color: #c8b381b0;
+  border-bottom-color: #82714c;
+  background: linear-gradient(165deg, #44453f93, #202c2c93);
+  box-shadow: inset 0 1px #edd7a52e, inset 0 -12px 25px #94b9a30a;
+}
+
+.app-shell .weapon-card.selected > svg {
+  color: #b8d9c5;
+}
+
+.app-shell .weapon-card.selected b {
+  color: #f0e5ca;
+}
+
+.app-shell .weapon-card:hover:not(:disabled) {
+  border-color: #e1c995;
+  background: linear-gradient(165deg, #48443baf, #222631bc);
+  filter: none;
+}
+
+.app-shell .weapon-card:hover:not(:disabled) > svg,
+.app-shell .weapon-card:nth-child(n):hover:not(:disabled) > svg {
+  animation: none;
+  color: #ead7aa;
+}
+
+.app-shell .weapon-card:active:not(:disabled) {
+  background: #554939b3;
+  box-shadow: inset 0 2px 8px #0005;
+}
+
+.app-shell .weapon-card:focus-visible {
+  outline: 0;
+  border-color: #ffdf95;
+  box-shadow: inset 0 0 0 2px #ffdf9580;
+}
+
+.app-shell .combat-foot {
+  margin-top: 11px;
+  font: 500 12px/1 "Barlow Condensed", sans-serif;
+  color: #aaa18c;
+}
+
+.app-shell .resource-strip {
+  gap: 22px;
+}
+
+.app-shell .resource-strip b {
+  font: 600 12px/1 "Barlow Condensed", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-shell .charge-cells,
+.app-shell .heat-meter {
+  height: 3px;
+}
+
+.app-shell .mobile-tactics-toggle {
+  font: 500 12px/1 "Barlow Condensed", sans-serif;
+  color: #c4b58f;
+}
+
+.app-shell .attack-loadout,
+.app-shell .item-loadout {
+  gap: 12px;
+}
+
+.app-shell .attack-card {
+  height: 105px;
+  padding: 9px 14px;
+  background: linear-gradient(150deg, #2d2c3291, #131722a8);
+  border: 1px solid #8f7e5e76;
+  border-top-color: #c7ae7994;
+  border-bottom: 2px solid #3e3729;
+  box-shadow: inset 0 1px #f0d6a415;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+}
+
+.app-shell .attack-card:before {
+  display: none;
+}
+
+.app-shell .attack-card > .attack-kind {
+  font: 500 11px/1 "Barlow Condensed", sans-serif;
+  color: #b6a98b;
+  letter-spacing: .5px;
+}
+
+.app-shell .attack-card b {
+  font: 400 22px/1 "Pirata One", serif;
+  color: #e9dcc1;
+}
+
+.app-shell .attack-card span {
+  font: 500 12px/1.2 "Barlow Condensed", sans-serif;
+  color: #b8b09c;
+}
+
+.app-shell .attack-card.attack-2 {
+  border-color: #c59c697d;
+  background: linear-gradient(150deg, #51403573, #241820b3);
+}
+
+.app-shell .attack-card.attack-2:after {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #d2af73, transparent);
+  opacity: .65;
+}
+
+.app-shell .attack-card:hover:not(:disabled) {
+  border-color: #ddc18b;
+  background: linear-gradient(150deg, #474038d1, #1c202bde);
+}
+
+.app-shell .attack-card:focus-visible {
+  outline: 0;
+  border-color: #ffdf95;
+  box-shadow: inset 0 0 0 2px #ffdf9580;
+}
+
+.app-shell .bag-button {
+  width: 58px;
+  background: #13162083;
+  border: 1px solid #96805a78;
+  border-bottom: 2px solid #41382b;
+  color: #ccba93;
+  font: 500 12px/1 "Barlow Condensed", sans-serif;
+}
+
+.app-shell .item-card {
+  background: linear-gradient(150deg, #2b302b91, #151b22ad);
+  border: 1px solid #8f7e5e76;
+  border-top-color: #c7ae7994;
+  box-shadow: inset 0 1px #f0d6a415;
+}
+
+.app-shell .item-card b {
+  font: 400 22px/1 "Pirata One", serif;
+}
+
+.app-shell .item-card span {
+  font: 500 12px/1.2 "Barlow Condensed", sans-serif;
+}
+
+.app-shell .tactics-drawer {
+  background: linear-gradient(150deg, #25222bf2, #10151ff5);
+  border: 1px solid #96805a70;
+  border-top-color: #c5ac74;
+  backdrop-filter: none;
+}
+
+.app-shell .stance-control button,
+.app-shell .utility-row button {
+  background: #191c25;
+  border-color: #82714e73;
+}
+
+.app-shell .stance-control button.active {
+  background: #303831;
+  border-color: #c0ab75;
+}
+
+.app-shell .title-content h1 {
+  text-shadow: 0 2px #191311, 0 7px 23px #000b;
+}
+
+.app-shell .start-button {
+  transform: none;
+  border: 1px solid #ceb279;
+  border-bottom: 3px solid #78613f;
+  background: linear-gradient(#d5c092, #bba16c);
+  box-shadow: inset 0 1px #f2dba45e, 0 5px 16px #0008;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+}
+
+.app-shell .title-credit,
+.app-shell .title-options button,
+.app-shell .title-best {
+  font-family: "Barlow Condensed", sans-serif;
+}
+
+.app-shell .fighter-choice b {
+  font: 400 26px/1.1 "Pirata One", serif;
+}
+
+.app-shell .fighter-choice {
+  transform: none;
+  background: linear-gradient(155deg, #27252aab, #10151edb);
+  border-bottom-width: 2px;
+}
+
+.app-shell .fighter-choice.chosen {
+  background: linear-gradient(155deg, #4d4538b3, #1a292bde);
+  box-shadow: inset 0 1px #dcc08936;
+}
+
+.app-shell .selection-class > span,
+.app-shell .fighter-details dd,
+.app-shell .fighter-details .fighter-confirm {
+  font-family: "Barlow Condensed", sans-serif;
+}
+
+.app-shell .fighter-details .fighter-confirm {
+  border: 1px solid #c6ad7b;
+  border-bottom: 3px solid #74633f;
+  background: linear-gradient(#d0bc90, #b69d71);
+  color: #171916;
+  font-size: 20px;
+}
+
+@media (max-width: 700px) {
+  .app-shell .fight-hud {
+    top: 49px;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 49px minmax(0, 1fr);
+  }
+  .app-shell .health-side { padding-left: 34px; }
+  .app-shell .health-side.rival { padding-right: 34px; }
+  .app-shell .health-side:before { left: 26px; }
+  .app-shell .health-side.rival:before { right: 26px; }
+  .app-shell .health-side:after { top: 25px; left: 30px; height: 17px; }
+  .app-shell .health-side.rival:after { right: 30px; left: -4px; }
+  .app-shell .kit-portrait { width: 29px; height: 43px; }
+  .app-shell .fighter-name { min-height: 20px; margin-bottom: 6px; gap: 5px; }
+  .app-shell .fighter-name b { font-size: clamp(17px, 4.4vw, 25px); }
+  .app-shell .fighter-name span { font-size: 10px; }
+  .app-shell .life-bar, .app-shell .rival .life-bar { height: 11px; }
+  .app-shell .health-side > small { font-size: 9px; padding-top: 6px; }
+  .app-shell .round-mark { min-height: 64px; padding-top: 11px; margin-top: -6px; }
+  .app-shell .round-mark span { font-size: 9px; letter-spacing: .5px; }
+  .app-shell .round-mark b { font-size: 33px; }
+  .app-shell .round-mark small { font-size: 8px; }
+  .app-shell .boss-hud .rival { padding-left: 34px; }
+  .app-shell .boss-hud .rival:before { left: 26px; right: 0; }
+  .app-shell .boss-hud .rival:after { left: 30px; right: -4px; }
+  .app-shell .boss-hud .rival .fighter-name { padding-right: 60px; }
+  .app-shell .boss-hud .rival .fighter-name b { font-size: 25px; }
+  .app-shell .boss-hud .rival .life-bar { height: 11px; }
+  .app-shell .stage-location { bottom: calc(var(--console-height, 139px) + 13px); }
+  .app-shell .stage-location b { font-size: 21px; }
+  .app-shell .stage-location span, .app-shell .stage-location small { font-size: 10px; }
+  .app-shell .perk-loadout { top: 112px; }
+  .app-shell .combat-console { padding: 12px 5% max(12px, env(safe-area-inset-bottom)); }
+  .app-shell .combat-read { font-size: 12px; margin-bottom: 10px; }
+  .app-shell .enemy-tell { gap: 4px; }
+  .app-shell .enemy-tell > span { display: none; }
+  .app-shell .enemy-tell > svg { width: 15px; height: 15px; }
+  .app-shell .enemy-tell b { font-size: 12px; }
+  .app-shell .enemy-tell small { font-size: 10px; }
+  .app-shell .weapon-loadout { gap: 8px; }
+  .app-shell .weapon-card { min-height: 62px; padding: 8px 6px; gap: 6px; }
+  .app-shell .weapon-card > svg { width: 27px; height: 30px; }
+  .app-shell .weapon-card b { font-size: clamp(18px, 4.9vw, 25px); }
+  .app-shell .weapon-card small { font-size: 9px; }
+  .app-shell .weapon-card .weapon-key { top: 4px; left: 6px; font-size: 8px; }
+  .app-shell .resource-strip { gap: 15px; }
+  .app-shell .combat-foot { font-size: 11px; }
+  .app-shell .resource-strip b { font-size: 11px; }
+  .app-shell .attack-loadout, .app-shell .item-loadout { gap: 6px; }
+  .app-shell .attack-card { height: 105px; padding: 8px 5px; }
+  .app-shell .attack-card b { font-size: clamp(16px, 4.1vw, 21px); }
+  .app-shell .attack-card span { font-size: 10px; }
+  .app-shell .attack-card > .attack-kind { font-size: 9px; }
+  .app-shell .item-card { padding: 8px 6px; }
+  .app-shell .item-card b { font-size: 18px; }
+  .app-shell .item-card span { font-size: 10px; }
+  .app-shell .bag-button { width: 40px; font-size: 10px; }
+  .app-shell .fighter-choice b { font-size: 18px; }
+  .app-shell .fighter-details .fighter-confirm { font-size: 15px; }
+}
+
+@media (max-height: 500px) and (min-width: 601px) {
+  .app-shell .fight-hud { top: 38px; grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr); gap: 15px; }
+  .app-shell .health-side { padding-left: 43px; }
+  .app-shell .health-side.rival { padding-right: 43px; }
+  .app-shell .kit-portrait { width: 34px; height: 42px; }
+  .app-shell .fighter-name { min-height: 21px; margin-bottom: 5px; }
+  .app-shell .fighter-name b { font-size: 25px; }
+  .app-shell .fighter-name span { font-size: 11px; }
+  .app-shell .life-bar, .app-shell .rival .life-bar { height: 10px; }
+  .app-shell .health-side:after { top: 26px; left: 36px; height: 16px; }
+  .app-shell .health-side.rival:after { right: 36px; left: -4px; }
+  .app-shell .health-side:before { left: 32px; }
+  .app-shell .health-side.rival:before { right: 32px; }
+  .app-shell .health-side > small { font-size: 9px; padding-top: 5px; }
+  .app-shell .round-mark { min-height: 61px; padding-top: 9px; }
+  .app-shell .round-mark b { font-size: 35px; }
+  .app-shell .round-mark span { font-size: 9px; }
+  .app-shell .round-mark small { font-size: 8px; }
+  .app-shell .boss-hud .rival { padding-left: 43px; }
+  .app-shell .boss-hud .rival:before { left: 32px; right: 0; }
+  .app-shell .boss-hud .rival:after { left: 36px; right: -4px; }
+  .app-shell .boss-hud .rival .life-bar { height: 10px; }
+  .app-shell .combat-console { min-height: 115px; padding: 11px 12% 9px; }
+  .app-shell .combat-read { font-size: 12px; margin-bottom: 7px; }
+  .app-shell .combat-foot { margin-top: 7px; font-size: 11px; }
+  .app-shell .weapon-card { min-height: 46px; padding: 7px 12px; }
+  .app-shell .weapon-card b { font-size: 23px; }
+  .app-shell .weapon-card small { font-size: 10px; margin-top: 3px; }
+  .app-shell .weapon-card > svg { width: 27px; height: 27px; }
+  .app-shell .stage-location { bottom: calc(var(--console-height, 115px) + 10px); }
+  .app-shell .stage-location b { font-size: 19px; }
+  .app-shell .stage-location span, .app-shell .stage-location small { font-size: 9px; }
+  .app-shell .perk-loadout { top: 98px; }
+  .app-shell .attack-card { height: 69px; padding: 6px 10px; display: grid; grid-template-columns: 25px 1fr; gap: 2px 8px; text-align: left; }
+  .app-shell .attack-card > svg { grid-row: 1 / 4; width: 24px; height: 24px; }
+  .app-shell .attack-card b { font-size: 20px; margin: 0; }
+  .app-shell .attack-card > .attack-kind { font-size: 9px; margin: 0; }
+  .app-shell .attack-card span { font-size: 10px; }
+  .app-shell .item-card { min-height: 69px; }
+}
+
+@media (max-width: 360px) {
+  .app-shell .fighter-name span { display: none; }
+  .app-shell .weapon-card > svg { width: 22px; }
+  .app-shell .weapon-card b { font-size: 18px; }
+  .app-shell .weapon-card small { font-size: 8px; }
+  .app-shell .resource-strip { gap: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .weapon-card,
+  .app-shell .attack-card,
+  .app-shell .game-tools button {
+    transition: none;
+  }
+}

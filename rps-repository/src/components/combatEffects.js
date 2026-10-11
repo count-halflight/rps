@@ -35,7 +35,7 @@ export function createCombatEffects(scene) {
     update(attacker,frame,a,sign,time,low=false){
       root.visible=true;
       if(lastId!==a.id){histories.forEach(h=>h.length=0);lastId=a.id;clearGhosts();
-        if(!low&&/ghost|afterimage|thousand|tempest/.test(frame.vfx))for(let i=0;i<3;i++){
+        if(!low&&!a.tier&&/ghost|afterimage|thousand|tempest/.test(frame.vfx))for(let i=0;i<3;i++){
           const ghost=clone(attacker.root);ghost.traverse(o=>{if(o.isMesh){o.material=ghostMaterial;o.castShadow=false;}});root.add(ghost);ghosts.push(ghost);
         }
       }

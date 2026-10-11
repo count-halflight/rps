@@ -54,6 +54,9 @@ export const DEFAULT_PREFERENCES = {
   music: true,
   quality: "auto",
   motion: "system",
+  reduceFlashes: true,
+  cinematicLength: "full",
+  haptics: true,
   cinematicQte: true,
   skin: "echo",
   liveDossiers: true,
@@ -67,13 +70,16 @@ export function loadPreferences(storage) {
         ? Math.max(0, Math.min(100, value.volume))
         : 60,
       music: typeof value.music === "boolean" ? value.music : true,
-      quality: ["auto", "high", "low"].includes(value.quality)
+      quality: ["auto", "high", "medium", "low"].includes(value.quality)
         ? value.quality
         : "auto",
       motion: ["system", "reduced"].includes(value.motion)
         ? value.motion
         : "system",
       cinematicQte: typeof value.cinematicQte === 'boolean' ? value.cinematicQte : true,
+      reduceFlashes: typeof value.reduceFlashes === 'boolean' ? value.reduceFlashes : true,
+      cinematicLength: ['full', 'short'].includes(value.cinematicLength) ? value.cinematicLength : 'full',
+      haptics: typeof value.haptics === 'boolean' ? value.haptics : true,
       skin: FRAME_FINISHES.some((f) => f.id === value.skin)
         ? value.skin
         : "echo",

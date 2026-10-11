@@ -1,4 +1,6 @@
-import { battleSoundProfile, choreographySoundProfile, scoreForFloor, scoreSection } from "./audioProfile.js";
+import { battleSoundProfile, choreographySoundProfile, scoreForFloor, scoreSection, ambienceForFloor } from "./audioProfile.js";
+import { sequenceAudioPlan, sceneMomentAudioPresentation, combatMomentAudioPresentation } from './sequenceAudioDirector.js';
+import { FIGHTERS } from './fighters.js';
 let context,
   master,
   analyser,
@@ -14,7 +16,9 @@ let volume = 0.6;
 let audioEnabled = true;
 let ambientRequested = false,
   ambientFloor = 1;
-let musicInfo = { score: 'Rain on the line', section: 'intro', bar: 0 };
+let musicInfo = { score: 'Cathedral rain', section: 'intro', bar: 0 };
+let ambientTexture = null;
+let sequenceAudio = null, schedulingSequence = null, sequenceSerial = 0;
 function audioContext() {
   if (!context) {
     context = new (window.AudioContext || window.webkitAudioContext)();
@@ -62,12 +66,17 @@ export function audioSnapshot() {
     state: context?.state || "uninitialized",
     enabled: audioEnabled,
     playing: Boolean(ambient),
+    ambience: ambientTexture,
     rms,
     ...battleMix,
     ...musicInfo,
+    sequenceId: sequenceAudio?.id || null,
+    sequenceSources: sequenceAudio?.sources.size || 0,
+    sequenceGain: sequenceAudio?.plan.gain || 0,
   };
 }
 function voiceRoute(node, destination, pan = 0) {
+  if (destination === master && schedulingSequence) destination = schedulingSequence.bus;
   // Stereo panners are optional so old Safari and the no-audio fallback work.
   if (!context.createStereoPanner || !pan) {
     node.connect(destination);
@@ -79,7 +88,47 @@ function voiceRoute(node, destination, pan = 0) {
   panner.connect(destination);
   return () => panner.disconnect();
 }
-function noise(time, duration, amplitude, frequency, destination = master, pan = 0, band = "highpass") {
+function sequenceSource(source, disconnect) {
+  const owner = schedulingSequence;
+  if (!owner) return disconnect;
+  const entry = { source, disconnect, ended: false };
+  owner.sources.add(entry);
+  return () => {
+    if (entry.ended) return;
+    entry.ended = true;
+    owner.sources.delete(entry);
+    disconnect();
+  };
+}
+export function cancelSequenceAudio(id = null) {
+  const active = sequenceAudio;
+  if (id !== null && active?.id !== id) return;
+  if (active) {
+    clearTimeout(active.endTimer);
+    const now = context.currentTime;
+    active.bus.gain.cancelScheduledValues(now);
+    active.bus.gain.setValueAtTime(.0001, now);
+    for (const entry of active.sources) {
+      try { entry.source.stop?.(now); } catch {}
+      if (!entry.ended) { entry.ended = true; entry.disconnect(); }
+    }
+    active.sources.clear();
+    active.bus.disconnect();
+    sequenceAudio = null;
+  }
+  anticipation = null;
+  lastAnticipationId = null;
+  if (context && ambient) {
+    ambient.gain.cancelScheduledValues(context.currentTime);
+    ambient.gain.setTargetAtTime(battleMix.musicGain, context.currentTime, .10);
+  }
+  if (context && musicFilter) {
+    musicFilter.frequency.cancelScheduledValues(context.currentTime);
+    musicFilter.frequency.setTargetAtTime(battleMix.cutoff, context.currentTime, .06);
+  }
+}
+export const cancelChoreography = cancelSequenceAudio;
+function noise(time, duration, amplitude, frequency, destination = master, pan = 0, band = "highpass", reverse = false) {
   if (!context.createBuffer) return;
   const buffer = context.createBuffer(
       1,
@@ -88,7 +137,7 @@ function noise(time, duration, amplitude, frequency, destination = master, pan =
     ),
     data = buffer.getChannelData(0);
   for (let i = 0; i < data.length; i++)
-    data[i] = (Math.random() * 2 - 1) * Math.exp((-i / data.length) * 5);
+    data[i] = (Math.random() * 2 - 1) * Math.exp(-(reverse ? 1 - i / data.length : i / data.length) * 5);
   const source = context.createBufferSource(),
     gain = context.createGain(),
     filter = context.createBiquadFilter();
@@ -100,12 +149,12 @@ function noise(time, duration, amplitude, frequency, destination = master, pan =
   filter.connect(gain);
   const disconnectRoute = voiceRoute(gain, destination, pan);
   source.start(time);
-  source.onended = () => {
+  source.onended = sequenceSource(source, () => {
     source.disconnect();
     filter.disconnect();
     gain.disconnect();
     disconnectRoute();
-  };
+  });
 }
 function kick(time, destination, amplitude = 0.25) {
   const osc = context.createOscillator(),
@@ -115,17 +164,19 @@ function kick(time, destination, amplitude = 0.25) {
   g.gain.setValueAtTime(amplitude, time);
   g.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
   osc.connect(g);
-  g.connect(destination);
+  const disconnectRoute = voiceRoute(g, destination);
   osc.start(time);
   osc.stop(time + 0.23);
-  osc.onended = () => {
+  osc.onended = sequenceSource(osc, () => {
     osc.disconnect();
     g.disconnect();
-  };
+    disconnectRoute();
+  });
 }
 export function configureAudio(percent, enabled = true) {
-  volume = Math.max(0, Math.min(1, percent / 100));
+  volume = Math.max(0, Math.min(1, Number.isFinite(percent) ? percent / 100 : .6));
   audioEnabled = enabled;
+  if (!enabled || volume === 0) cancelSequenceAudio();
   if (context && master)
     master.gain.setTargetAtTime(
       audioEnabled ? volume : 0,
@@ -143,31 +194,50 @@ export function setBattleAudio(
   const now = context.currentTime;
   musicFilter?.frequency.setTargetAtTime(battleMix.cutoff, now, 0.2);
   if (!ambient) return;
-  if (finalAttempt && lastAnticipationId !== finalAttempt.id) {
-    lastAnticipationId = finalAttempt.id;
-    const elapsed = Number.isFinite(finalAttempt.startedAt)
-      ? Math.max(0, performance.now() - finalAttempt.startedAt) / 1000
-      : 0;
-    const impact =
-      now + Math.max(0, (finalAttempt.duration / 1000) * (finalAttempt.impactAt ?? 0.64) - elapsed);
-    anticipation = { start: now, impact, quiet: Math.max(now, impact - 0.22) };
-    ambient.gain.cancelScheduledValues(now);
-    ambient.gain.setValueAtTime(battleMix.musicGain, now);
-    ambient.gain.linearRampToValueAtTime(
-      battleMix.musicGain * 1.25,
-      Math.max(now, anticipation.quiet - 0.04),
-    );
-    ambient.gain.linearRampToValueAtTime(0.0001, anticipation.quiet);
-    ambient.gain.setValueAtTime(0.0001, impact);
-    ambient.gain.linearRampToValueAtTime(
-      battleMix.musicGain * 1.15,
-      impact + 0.025,
-    );
-  } else if (!finalAttempt) {
+  const active = sequenceAudio?.animation || finalAttempt;
+  if (active) {
+    const cueAnimation = active.tier ? active : { ...active, finisher: true };
+    const key = sequenceAudio?.id || active.id || active.sequenceId;
+    if (lastAnticipationId !== key) {
+      const elapsed = Number.isFinite(active.startedAt) ? Math.max(0, performance.now() - active.startedAt) / 1000 : 0;
+      cinematicMusic(cueAnimation, sequenceAudioPlan(cueAnimation), now - elapsed, key);
+    }
+  } else {
     anticipation = null;
     lastAnticipationId = null;
     ambient.gain.cancelScheduledValues(now);
     ambient.gain.setTargetAtTime(battleMix.musicGain, now, 0.12);
+  }
+}
+function cinematicMusic(animation, plan, start, key) {
+  if (!ambient) return;
+  const now = context.currentTime, impact = Math.max(now, start + plan.impact);
+  lastAnticipationId = key;
+  ambient.gain.cancelScheduledValues(now);
+  ambient.gain.setValueAtTime(battleMix.musicGain * plan.duck, now);
+  if (plan.tier === 5) {
+    // The finale owns a five-act stem; normal score and danger heartbeat wait.
+    anticipation = { start, quiet: now, impact: Math.max(now, start + plan.duration), finale: true };
+    ambient.gain.setValueAtTime(.0001, now);
+    ambient.gain.setValueAtTime(.0001, Math.max(now, start + plan.duration));
+  } else if (plan.tier >= 3) {
+    const quiet = plan.silence ? Math.max(now, start + plan.silence.at) : impact;
+    anticipation = { start, quiet, impact };
+    ambient.gain.linearRampToValueAtTime(battleMix.musicGain * plan.duck * 1.25, Math.max(now, quiet - .055));
+    if (plan.silence) {
+      ambient.gain.linearRampToValueAtTime(.0001, quiet);
+      ambient.gain.setValueAtTime(.0001, Math.max(now, start + plan.silence.end));
+      ambient.gain.linearRampToValueAtTime(battleMix.musicGain * plan.duck, impact + .08);
+    }
+    ambient.gain.linearRampToValueAtTime(battleMix.musicGain, Math.max(impact + .081, start + plan.duration));
+  } else anticipation = null;
+  const inhale = plan.cues.find(cue => cue.id === 'inhale');
+  if (inhale && musicFilter) {
+    const begins = Math.max(now, start + inhale.at), ends = Math.max(begins + .005, start + (inhale.end ?? plan.impact));
+    musicFilter.frequency.setValueAtTime(battleMix.cutoff, begins);
+    musicFilter.frequency.linearRampToValueAtTime(Math.min(350, battleMix.cutoff), begins + Math.min(.1, (ends - begins) * .4));
+    musicFilter.frequency.setValueAtTime(Math.min(350, battleMix.cutoff), ends);
+    musicFilter.frequency.linearRampToValueAtTime(battleMix.cutoff, ends + .11);
   }
 }
 function note(
@@ -190,11 +260,11 @@ function note(
   const disconnectRoute = voiceRoute(gain, destination, pan);
   oscillator.start(time);
   oscillator.stop(time + duration + 0.01);
-  oscillator.onended = () => {
+  oscillator.onended = sequenceSource(oscillator, () => {
     oscillator.disconnect();
     gain.disconnect();
     disconnectRoute();
-  };
+  });
 }
 function sweep(from, to, time, duration, amplitude, waveform = "sine", pan = 0) {
   const oscillator = context.createOscillator(), gain = context.createGain();
@@ -208,9 +278,9 @@ function sweep(from, to, time, duration, amplitude, waveform = "sine", pan = 0) 
   const disconnectRoute = voiceRoute(gain, master, pan);
   oscillator.start(time);
   oscillator.stop(time + duration + .01);
-  oscillator.onended = () => {
+  oscillator.onended = sequenceSource(oscillator, () => {
     oscillator.disconnect(); gain.disconnect(); disconnectRoute();
-  };
+  });
 }
 function musicVoice(frequency, time, duration, amplitude, waveform, destination, pan = 0, soft = false) {
   const oscillator = context.createOscillator(), gain = context.createGain();
@@ -223,12 +293,53 @@ function musicVoice(frequency, time, duration, amplitude, waveform, destination,
   oscillator.connect(gain);
   const disconnectRoute = voiceRoute(gain, destination, pan);
   oscillator.start(time); oscillator.stop(time + duration + .01);
-  oscillator.onended = () => {
+  oscillator.onended = sequenceSource(oscillator, () => {
     oscillator.disconnect(); gain.disconnect(); disconnectRoute();
-  };
+  });
 }
 function scaleNote(score, degree) {
   return score.scale[((degree % 7) + 7) % 7] + Math.floor(degree / 7) * 12;
+}
+function gothicChord(score, base, chordOffset, time, tick, section, destination) {
+  score.chord.forEach((interval, index) => {
+    const frequency = base * 2 * Math.pow(2, (chordOffset + interval) / 12);
+    const pan = (index - 1.5) * .24;
+    // Open pipe partials and a slow bowed texture give the minor harmony a
+    // cathedral body. District charts retain their different grooves/motifs.
+    musicVoice(frequency, time + index * .02, tick * 14, .012 * section.pads, 'sine', destination, pan, true);
+    musicVoice(frequency / 2, time + index * .02, tick * 14, .007 * score.organ * section.pads, 'sine', destination, -pan, true);
+    musicVoice(frequency * 2, time + index * .02, tick * 12, .0035 * score.organ * section.pads, 'sine', destination, pan, true);
+    musicVoice(frequency * .998, time + .12 + index * .025, tick * 13,
+      .0045 * score.strings * section.pads, 'sawtooth', destination, -pan, true);
+  });
+}
+function bossStem(score, base, chordOffset, beat, time, tick, destination) {
+  if (!bossLayer) return;
+  const voice = bossIdentity.toLowerCase(), frequency = base * Math.pow(2, chordOffset / 12);
+  if (beat === 0) {
+    musicVoice(frequency / 2, time, tick * 7, .026 + bossLayer * .005, 'triangle', destination, 0, true);
+    const gong = /bulwark|plating|rail/.test(voice);
+    const ratios = gong ? [1, 2.76, 4.3] : [1, 1.5, 2.01];
+    ratios.forEach((ratio, index) => musicVoice(frequency * 2 * ratio, time + index * .01,
+      gong ? tick * 5 : tick * 3, .017 / (index + 1), 'sine', destination, (index - 1) * .3));
+  }
+  if (bossLayer >= 2 && beat % 2 === 0) {
+    const interval = [0, 7, 3, 7][Math.floor(beat / 2)];
+    musicVoice(frequency * 2 * Math.pow(2, interval / 12), time, tick * .7,
+      .018 + bossLayer * .004, 'sawtooth', destination, beat < 4 ? -.3 : .3);
+  }
+  if (/crucible|thermal|kiln/.test(voice) && beat % 4 === 0)
+    noise(time, .20, .033, 370, destination, -.3, 'lowpass');
+  if (/sable|siphon/.test(voice) && beat === 5)
+    musicVoice(frequency * 3, time, tick * 2, .035, 'triangle', destination, .6, true);
+  if (/cipher|blackout/.test(voice) && [1, 5, 7].includes(beat))
+    noise(time, .035, .030, 2800, destination, beat < 4 ? -.6 : .6, 'bandpass');
+  if (/onyx|mirror/.test(voice) && beat === 7)
+    musicVoice(frequency * 3, time + tick * .3, tick * .6, .032, 'sine', destination, -.55);
+  if (bossLayer === 3 && beat >= 6) {
+    noise(time + tick * .5, .04, .024, 1100, destination, .4, 'bandpass');
+    note(frequency, time + tick * .5, .09, .030, 'triangle', destination, -.4);
+  }
 }
 function scorePercussion(score, step, bar, time, tick, intensity, section, destination) {
   const beat = step % 8, gain = section.drums;
@@ -268,8 +379,70 @@ function scorePercussion(score, step, bar, time, tick, intensity, section, desti
     noise(time + tick * .5, .045, .023 * gain, 1800, destination, .3);
   }
 }
+
+function districtAmbience(level, destination) {
+  if (!context.createBuffer || !context.createBufferSource) return null;
+  const palette = ambienceForFloor(level), rate = Math.min(22050, context.sampleRate);
+  const buffer = context.createBuffer(1, rate * 8, rate), data = buffer.getChannelData(0);
+  let seed = 0x51f15e + palette.texture.charCodeAt(0) * 7919, brown = 0, sum = 0;
+  for (let index = 0; index < data.length; index++) {
+    seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+    const white = (seed >>> 0) / 2147483648 - 1, time = index / rate;
+    brown = brown * .995 + white * .045;
+    const wave = .5 - Math.cos(time * Math.PI / 4) * .5;
+    let value;
+    switch (palette.texture) {
+      case 'rain':
+        value = white * (.24 + wave * .07) + brown * .15
+          + Math.sin(time * Math.PI * 123) * .10 * wave * wave;
+        break;
+      case 'furnace':
+        value = brown * (1.05 + wave * .35) + white * .12
+          + Math.sin(time * Math.PI * 86) * .11;
+        break;
+      case 'vault':
+        value = Math.sin(time * Math.PI * 114) * .12 + Math.sin(time * Math.PI * 228) * .06
+          + Math.sin(time * Math.PI * 342) * .025 + brown * .08;
+        break;
+      case 'market':
+        value = white * (.14 + .08 * wave) + brown * .24
+          + Math.sin(time * Math.PI * 430 + Math.sin(time * 2.7) * 5) * .10
+          + Math.sin(time * Math.PI * 654 + Math.sin(time * 1.9) * 4) * .06;
+        break;
+      case 'signal':
+        value = white * (.025 + (Math.sin(time * Math.PI * 2.75) > .92 ? .24 : 0))
+          + Math.sin(time * Math.PI * 246) * .018;
+        break;
+      default: {
+        const horn = Math.max(0, Math.sin((time - 2.7) * Math.PI / 2.4));
+        value = brown * (.28 + wave * 1.3) + white * .055
+          + horn * horn * (Math.sin(time * Math.PI * 146) * .11 + Math.sin(time * Math.PI * 219) * .055);
+      }
+    }
+    // A short feather at the wrap prevents a buffer seam; no samples or remote
+    // sound files are needed. The private noise seed never touches combat RNG.
+    const edge = Math.min(1, index / (rate * .08), (data.length - 1 - index) / (rate * .08));
+    data[index] = value * edge; sum += data[index];
+  }
+  const mean = sum / data.length;
+  let peak = 0;
+  for (const value of data) peak = Math.max(peak, Math.abs(value - mean));
+  const scale = peak > .7 ? .7 / peak : 1;
+  for (let index = 0; index < data.length; index++) data[index] = (data[index] - mean) * scale;
+  const source = context.createBufferSource(), color = context.createBiquadFilter(), gain = context.createGain();
+  source.buffer = buffer; source.loop = true;
+  color.type = palette.filter; color.frequency.value = palette.cutoff; color.Q.value = .6;
+  gain.gain.setValueAtTime(0, context.currentTime);
+  gain.gain.linearRampToValueAtTime(palette.gain, context.currentTime + .12);
+  source.connect(color); color.connect(gain); gain.connect(destination);
+  source.start(context.currentTime);
+  musicNodes.push(source, color, gain);
+  return palette.name;
+}
 export function playTone(type, enabled, delay = 0) {
   if (!enabled) return;
+  const previousSequence = schedulingSequence;
+  if (delay > 0 && sequenceAudio) schedulingSequence = sequenceAudio;
   try {
     audioContext();
     const now = context.currentTime + delay;
@@ -338,6 +511,8 @@ export function playTone(type, enabled, delay = 0) {
     if (type === "win") note(70, now, 0.16, 0.12, "triangle");
   } catch {
     /* Silent play remains available without Web Audio. */
+  } finally {
+    schedulingSequence = previousSequence;
   }
 }
 export function setAmbience(enabled, level = 1) {
@@ -356,6 +531,7 @@ export function setAmbience(enabled, level = 1) {
   ambient?.disconnect();
   ambient = null;
   musicFilter = null;
+  ambientTexture = null;
   if (!enabled || !context) return;
   // Audio begins only after a user gesture has created the context.
   ambient = context.createGain();
@@ -374,6 +550,7 @@ export function setAmbience(enabled, level = 1) {
   musicBody.connect(ambient);
   musicFilter = filter;
   musicNodes.push(filter, musicBody);
+  ambientTexture = districtAmbience(level, filter);
   let step = 0;
   const pulse = () => {
     if (!ambient || !ambientRequested) return;
@@ -391,7 +568,8 @@ export function setAmbience(enabled, level = 1) {
     const quiet =
       anticipation && now >= anticipation.quiet && now < anticipation.impact;
     const intensity = Math.min(1.3, battleMix.intensity + build * .6 + bossLayer * .09),
-      bpm = score.bpm + battleMix.intensity * 21 + build * 34 + bossLayer * 2;
+      bpm = (score.bpm + battleMix.intensity * 21 + build * 34 + bossLayer * 2)
+        * (bossLayer >= 2 && /redline/.test(bossIdentity.toLowerCase()) ? 1.2 : 1);
     const tick = 60 / bpm / 2;
     if (context.state === "running" && !quiet) {
       const bar = Math.floor(step / 8), beat = step % 8;
@@ -399,7 +577,7 @@ export function setAmbience(enabled, level = 1) {
       const variation = score.variation + cycle;
       const chordDegree = score.chords[(Math.floor(bar / 2) + variation) % score.chords.length];
       const chordOffset = scaleNote(score, chordDegree);
-      musicInfo = { score: score.name, section: build > .2 ? 'finish build' : section.name, bar };
+      musicInfo = { score: score.name, section: build > .2 ? 'finish build' : section.name, bar, scoreBpm: bpm };
       scorePercussion(score, step, bar, now, tick, intensity, section, filter);
       const bassDegree = score.bass[(beat + (bar % 4 === 3 ? variation % 2 : 0)) % 8];
       if (bassDegree >= 0) {
@@ -409,11 +587,7 @@ export function setAmbience(enabled, level = 1) {
         musicVoice(frequency / 2, now + sync, tick * 1.1, .033 * section.bass, 'sine', filter);
       }
       if (beat === 0 && bar % 2 === 0) {
-        score.chord.forEach((interval, index) =>
-          musicVoice(base * 2 * Math.pow(2, (chordOffset + interval) / 12),
-            now + index * .02, tick * 14, .015 * section.pads,
-            score.voice === 'kiln' ? 'triangle' : 'sine', filter,
-            (index - 1.5) * .24, true));
+        gothicChord(score, base, chordOffset, now, tick, section, filter);
       }
       // A call-and-response melody with alternate endings every four bars.
       const phrase = ((bar % 2) * 8 + beat + variation * 2 + (bar % 8 >= 4 ? 4 : 0)) % 16;
@@ -427,6 +601,8 @@ export function setAmbience(enabled, level = 1) {
           (.020 + intensity * .014) * section.lead, score.leadWave, filter, pan);
         if (score.voice === 'prism' || score.voice === 'rain')
           musicVoice(frequency * 2.01, now + .012, duration * .65, .007 * section.lead, 'sine', filter, -pan);
+        if (score.celesta > .4)
+          musicVoice(frequency * 1.38, now + .006, duration * .45, .006 * score.celesta, 'sine', filter, -pan);
       }
       if ((section.name === 'reprise' || section.name === 'finale') && beat % 2 === 1) {
         const degree = score.lead[(15 - phrase + 16) % 16];
@@ -437,17 +613,16 @@ export function setAmbience(enabled, level = 1) {
         noise(now, .035, .023 + build * .044, 2300, filter);
         if (build > .65) noise(now + tick * .5, .025, .025, 3700, filter, .3);
       }
-      if (bossLayer && beat % 4 === 0) {
-        musicVoice(base / 2, now, .3, .04 + bossLayer * .008, 'triangle', filter);
-        note(base * Math.pow(2, chordOffset / 12), now + .035, .23, .025, 'sawtooth', filter, -.3);
-      }
+      bossStem(score, base, chordOffset, beat, now, tick, filter);
       step++;
     }
     musicTimer = setTimeout(pulse, tick * 1000);
   };
   const heartbeat = () => {
     if (!ambient || !ambientRequested) return;
-    if (context.state === "running" && battleMix.heartbeatGain > 0) {
+    const now = context.currentTime;
+    const cinematicQuiet = anticipation && now >= anticipation.quiet && now < anticipation.impact;
+    if (context.state === "running" && battleMix.heartbeatGain > 0 && !cinematicQuiet && !anticipation?.finale) {
       note(58, context.currentTime, 0.13, battleMix.heartbeatGain, "sine");
       note(
         47,
@@ -463,8 +638,15 @@ export function setAmbience(enabled, level = 1) {
   heartbeat();
 }
 
-let bossLayer=0;
-export function setBossAudio(phase=0){bossLayer=Math.max(0,Math.min(3,phase));}
+let bossLayer = 0, bossIdentity = '';
+export function setBossAudio(phase = 0, identity = '') {
+  if (typeof phase === 'object' && phase) {
+    identity = phase.id || phase.ability || phase.model || '';
+    phase = phase.phase || 0;
+  }
+  bossLayer = Math.max(0, Math.min(3, Number.isFinite(phase) ? phase : 0));
+  bossIdentity = bossLayer ? String(identity) : '';
+}
 function weaponContact(animation, palette, time, strength, pan, ordinal = 0) {
   const root = palette.root * (1 + ordinal * .025);
   if (animation.style === 'brawler') {
@@ -484,6 +666,333 @@ function weaponContact(animation, palette, time, strength, pan, ordinal = 0) {
     sweep(root * 5.5, root * 1.8, time, .065, .029 * strength, 'triangle', pan);
     note(root * 2.67, time + .008, .15, .018 * strength, 'sine', master, -pan);
     if (animation.style === 'glaive') note(root * .5, time, .18, .045 * strength, 'triangle');
+  }
+  const hand = animation.weapon || animation.playerWeapon || animation.enemyWeapon || animation.sequenceId?.split('.')[1];
+  if (hand === 'rock') {
+    note(48, time, .20, .036 * strength, 'sine');
+    noise(time, .075, .040 * strength, 700, master, pan, 'bandpass');
+  } else if (hand === 'paper') {
+    noise(time, .13, .025 * strength, 1700, master, -pan, 'bandpass');
+    noise(time + .03, .035, .022 * strength, 3100, master, pan);
+  } else if (hand === 'scissors') {
+    note(root * 4.12, time + .017, .16, .012 * strength, 'sine', master, -pan);
+  }
+}
+
+function risingLayer(from, time, duration, amplitude, pan) {
+  const oscillator = context.createOscillator(), gain = context.createGain();
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(from, time);
+  oscillator.frequency.exponentialRampToValueAtTime(from * 2, time + duration);
+  gain.gain.setValueAtTime(.0001, time);
+  gain.gain.linearRampToValueAtTime(amplitude, time + duration * .40);
+  gain.gain.linearRampToValueAtTime(amplitude * .65, time + duration * .75);
+  gain.gain.exponentialRampToValueAtTime(.0001, time + duration);
+  oscillator.connect(gain);
+  const disconnectRoute = voiceRoute(gain, master, pan);
+  oscillator.start(time); oscillator.stop(time + duration + .01);
+  oscillator.onended = sequenceSource(oscillator, () => {
+    oscillator.disconnect(); gain.disconnect(); disconnectRoute();
+  });
+}
+function shepardConvergence(time, duration, palette) {
+  const part = duration / 3;
+  for (let cycle = 0; cycle < 3; cycle++) {
+    for (let octave = 0; octave < 5; octave++) {
+      const weight = Math.exp(-Math.pow((octave - 2) / 1.5, 2));
+      risingLayer(palette.root / 4 * Math.pow(2, octave), time + cycle * part,
+        part, (.012 + cycle * .004) * weight, (octave - 2) * .16);
+    }
+  }
+}
+
+function momentCue(cue, animation, time, span, pitch) {
+  const side = ((animation.actorSide || animation.defeatedSide || animation.side) === 'player' ? -1 : 1) * (animation.mirrored ? -1 : 1);
+  const pan = side * .35;
+  // Each cue owns a different physical material; compressed previews preserve
+  // those envelopes and contact offsets instead of replaying one generic hit.
+  const duration = Math.min(1.5, span);
+  const length = fraction => Math.max(.012, duration * fraction);
+  const at = fraction => time + duration * fraction;
+  const metal = (root, strength, spread = .4) => {
+    [1, 2.76, 4.19].forEach((ratio, index) =>
+      note(root * ratio * pitch, at(index * .06), length(.85 - index * .06),
+        strength / (index + 1), 'sine', master, index % 2 ? -spread : spread));
+  };
+  switch (cue.id) {
+    case 'reveal-thud': {
+      const pulse = cue.pulseIndex || 0;
+      // Three shared physical throws; no result sound leaks into these beats.
+      [ -.42, .42 ].forEach(direction => {
+        sweep(104 + pulse * 8, 57 + pulse * 3, time, length(.92), .030, 'sine', direction);
+        noise(time, length(.50), .018, 540, master, direction, 'lowpass');
+        noise(at(.06), length(.30), .012, 1450, master, direction, 'bandpass');
+      });
+      break;
+    }
+    case 'totem-contact': {
+      const handMaterial = (hand, direction, strength) => {
+        if (hand === 'paper') {
+          noise(time, length(.94), .026 * strength, 1900, master, direction, 'bandpass');
+          sweep(420 * pitch, 650 * pitch, time, length(.85), .017 * strength, 'sine', direction);
+        } else if (hand === 'scissors') {
+          note(840 * pitch, time, length(.95), .024 * strength, 'sine', master, direction);
+          note(1720 * pitch, at(.06), length(.76), .011 * strength, 'sine', master, -direction);
+          noise(time, length(.14), .023 * strength, 3200, master, direction);
+        } else {
+          sweep(115, 48, time, length(.92), .049 * strength, 'sine', direction);
+          noise(time, length(.40), .031 * strength, 660, master, direction, 'lowpass');
+        }
+      };
+      handMaterial(animation.playerHand || animation.playerWeapon || 'rock', -.45, cue.outcome === 'loss' ? .55 : 1);
+      handMaterial(animation.enemyHand || animation.enemyWeapon || 'scissors', .45, cue.outcome === 'win' ? .55 : 1);
+      if (cue.outcome === 'draw') note(310 * pitch, time, length(.85), .018, 'triangle');
+      break;
+    }
+    case 'weapon-clash':
+      noise(time, length(.38), .079, 2350, master, 0, 'bandpass');
+      metal(265, .038, .6);
+      note(78, time, length(.92), .045, 'sine');
+      break;
+    case 'double-skid':
+      [ -.6, .6 ].forEach(direction => {
+        noise(time, length(.95), .038, 690, master, direction, 'bandpass');
+        sweep(128, 61, time, length(.85), .020, 'triangle', direction);
+      });
+      break;
+    case 'guard-set': {
+      const fighter = FIGHTERS.find(value => value.id === cue.character);
+      const palette = choreographySoundProfile({ style: fighter?.style || animation.style });
+      const cloth = ['brawler', 'archer'].includes(fighter?.style);
+      noise(time, length(.45), cloth ? .030 : .020, cloth ? 900 : 2900, master, pan, 'bandpass');
+      note(palette.root * (cloth ? 1.5 : 4.1), time, length(.95), .023,
+        cloth ? 'triangle' : 'sine', master, pan);
+      if (fighter?.style === 'mage') note(palette.root * 3, at(.15), length(.74), .013, 'sine', master, -pan);
+      break;
+    }
+    case 'injector-pulse':
+      noise(time, length(.045), .028, 2200, master, pan);
+      sweep(185, 560, time, length(.88), .022, 'sine', pan);
+      [0, 4, 7].forEach((interval, index) =>
+        musicVoice(330 * Math.pow(2, interval / 12), at(index * .15), length(.70),
+          .013 / (index + 1), 'sine', master, (index - 1) * .3, true));
+      break;
+    case 'coolant-hiss':
+      noise(time, length(.98), .051, 1700, master, pan, 'bandpass');
+      noise(time, length(.96), .025, 510, master, -pan, 'lowpass');
+      sweep(480, 108, time, length(.94), .016, 'sine', pan);
+      break;
+    case 'battery-fill':
+      sweep(155, 880, time, length(.94), .019, 'triangle', pan);
+      musicVoice(208, time, length(.95), .016, 'sine', master, -pan, true);
+      [0, .22, .44, .66].forEach((offset, index) =>
+        note(390 * Math.pow(1.26, index), at(offset), length(.23), .012, 'sine', master, index % 2 ? -pan : pan));
+      break;
+    case 'scan-sweep':
+      sweep(1160, 370, time, length(.95), .022, 'sine', -pan);
+      noise(time, length(.12), .014, 2900, master, -pan, 'bandpass');
+      [0, .29, .61].forEach((offset, index) =>
+        note(840 + index * 120, at(offset), length(.19), .016, 'sine', master, index % 2 ? pan : -pan));
+      break;
+    case 'last-exhale':
+      noise(time, length(.98), .037, 840, master, pan, 'bandpass');
+      noise(time, length(.72), .012, 210, master, pan, 'lowpass');
+      break;
+    case 'street-light-out': {
+      const fixture = cue.fixtureGroup || 0, direction = (fixture % 2 ? -.65 : .65) * side;
+      noise(time, length(.15), .034, 3600, master, direction);
+      sweep(1580 - fixture * 225, 210, time, length(.91), .025, 'triangle', direction);
+      break;
+    }
+    case 'defeat-low-tone':
+      musicVoice(46, time, length(.98), .034, 'sine', master, 0, true);
+      musicVoice(61.4, time, length(.96), .011, 'sine', master, -.2, true);
+      break;
+    case 'blade-catch':
+      noise(time, length(.22), .035, 3300, master, pan);
+      note(690 * pitch, time, length(.85), .028, 'triangle', master, pan);
+      note(1840 * pitch, at(.07), length(.65), .011, 'sine', master, -pan);
+      break;
+    case 'heel-thud':
+      sweep(102, 48, time, length(.96), .051, 'sine', pan);
+      noise(time, length(.6), .045, 410, master, pan, 'lowpass');
+      noise(at(.11), length(.30), .014, 1200, master, -pan, 'bandpass');
+      break;
+    case 'fist-clap':
+      noise(time, length(.30), .075, 1350, master, pan, 'bandpass');
+      sweep(170, 71, time, length(.88), .048, 'triangle');
+      [0, .22, .45].forEach((offset, index) =>
+        noise(at(offset), length(.12), .012 / (index + 1), 3500 + index * 450, master, (index - 1) * .3));
+      break;
+    case 'prism-turn':
+      sweep(410 * pitch, 820 * pitch, time, length(.97), .024, 'sine', pan);
+      sweep(825 * pitch, 490 * pitch, time, length(.96), .010, 'sine', -pan);
+      [0, 4, 7].forEach((interval, index) =>
+        note(1230 * pitch * Math.pow(2, interval / 12), at(.14 + index * .18),
+          length(.35), .009, 'sine', master, (index - 1) * .45));
+      break;
+    case 'staff-tap':
+      note(176 * pitch, time, length(.75), .035, 'triangle', master, pan);
+      noise(time, length(.28), .025, 730, master, pan, 'bandpass');
+      note(1360 * pitch, at(.08), length(.85), .010, 'sine', master, -pan);
+      break;
+    case 'bow-nock':
+      noise(time, length(.2), .019, 2550, master, pan);
+      sweep(1120 * pitch, 260 * pitch, at(.06), length(.86), .037, 'triangle', -pan);
+      note(520 * pitch, at(.22), length(.62), .012, 'sine', master, pan);
+      break;
+    case 'glaive-plant':
+      sweep(100, 42, time, length(.96), .068, 'sine');
+      noise(time, length(.40), .055, 860, master, pan, 'bandpass');
+      metal(144, .025, pan);
+      [0, .28, .54].forEach((offset, index) =>
+        noise(at(offset), length(.1), .010, 3900 + index * 300, master, -pan));
+      break;
+    case 'iron-step':
+      sweep(85, 32, time, length(.96), .082, 'sine');
+      noise(time, length(.76), .068, 280, master, pan, 'lowpass');
+      metal(132, .019, pan);
+      noise(at(.17), length(.28), .018, 2200, master, -pan, 'bandpass');
+      break;
+    case 'shield-plant':
+      sweep(118, 29, time, length(.94), .105, 'sine');
+      noise(time, length(.7), .082, 450, master, 0, 'lowpass');
+      metal(181, .044, .24);
+      noise(at(.1), length(.24), .027, 3300, master, pan);
+      break;
+    case 'shield-split':
+      noise(time, length(.30), .087, 1650, master, -.45, 'bandpass');
+      sweep(360 * pitch, 84, time, length(.8), .056, 'triangle', .45);
+      metal(245, .036, .65);
+      [0, .16, .39, .64].forEach((offset, index) =>
+        note((index % 2 ? 680 : 440) * pitch, at(offset), length(.24),
+          .015, 'sine', master, index % 2 ? -.7 : .7));
+      break;
+    case 'armour-shed':
+      note(59, time, length(.70), .054, 'sine');
+      noise(time, length(.28), .048, 550, master, 0, 'lowpass');
+      for (let index = 0; index < 7; index++) {
+        const contact = at(index * .10), direction = index % 2 ? -.65 : .65;
+        note((220 + index * 83) * pitch, contact, length(.28), .022 / (1 + index * .12), 'sine', master, direction);
+        noise(contact, length(.09), .016, 2100 + index * 170, master, direction);
+      }
+      break;
+    case 'quick-brace':
+      noise(time, length(.34), .038, 660, master, pan, 'bandpass');
+      noise(at(.16), length(.29), .024, 2200, master, -pan);
+      note(94, at(.1), length(.78), .037, 'triangle');
+      metal(310, .011, .2);
+      break;
+    case 'plate-fracture':
+      noise(time, length(.18), .073, 3300, master, pan);
+      sweep(250, 78, time, length(.45), .048, 'triangle', -pan);
+      [0, .19, .4, .65].forEach((offset, index) =>
+        note((570 - index * 88) * pitch, at(offset), length(.30),
+          .023 / (index + 1), 'sine', master, index % 2 ? -.55 : .55));
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+function authoredCue(cue, animation, plan, start) {
+  const now = context.currentTime, scheduled = start + cue.at;
+  if (cue.end === undefined && scheduled < now - .035) return;
+  if (cue.end !== undefined && start + cue.end <= now) return;
+  const time = Math.max(now, scheduled), end = Math.min(start + plan.duration, start + (cue.end ?? cue.at + .2));
+  const span = Math.max(.025, end - time), palette = choreographySoundProfile(animation);
+  const stamp = `${animation.sequenceId}:${cue.id}:${cue.index}`;
+  const hash = [...stamp].reduce((value, letter) => (value * 31 + letter.charCodeAt(0)) >>> 0, 7);
+  const pitch = 1 + (hash % 17 - 8) / 100;
+  if (animation.momentId && momentCue(cue, animation, time, span, pitch)) return;
+  const voice = { ...palette, root: palette.root * pitch };
+  const pans = { 'cut-left': -.65, 'cut-right': .65, 'cut-high': .1, 'cut-low': -.2, 'cross-cut': .3,
+    'spin-cut': -.55, 'final-pass': .55, 'reflection-left': -.7, 'reflection-water': .6,
+    'reflection-window': -.45, 'reflection-sign': .45, 'reflection-cross': 0 };
+  if (Object.hasOwn(pans, cue.id)) {
+    weaponContact(animation, voice, time, .54, pans[cue.id], cue.index);
+    return;
+  }
+  switch (cue.id) {
+    case 'breath':
+      noise(time, .11, .016, 1050, master, -.15, 'bandpass');
+      break;
+    case 'draw':
+      noise(time, .085, .050, 2800, master, -.6);
+      sweep(1050 * pitch, 420 * pitch, time, .075, .030, 'triangle', .45);
+      break;
+    case 'blade-coil':
+      note(voice.root * 1.5, time, .30, .024, 'sine', master, -.4);
+      sweep(voice.root, voice.root * 3, time + .025, .23, .014, 'sine', .4);
+      break;
+    case 'sheath-click':
+      noise(time, .028, .043, 2300, master, .15);
+      note(740 * pitch, time, .065, .024, 'triangle', master, .15);
+      note(2110 * pitch, time + .008, .045, .012, 'sine', master, -.1);
+      break;
+    case 'light-cut':
+      weaponContact(animation, voice, time, .82, .4);
+      note(voice.root * 2.67, time + .045, .21, .018, 'sine', master, -.4);
+      break;
+    case 'light-drain':
+      sweep(82, 330, time, .48, .025, 'sine', -.4);
+      noise(time, .28, .017, 1800, master, .4, 'bandpass', true);
+      break;
+    case 'inhale':
+      noise(time, span, .032, 950, master, -.25, 'lowpass', true);
+      sweep(120, 55, time, span, .023, 'sine');
+      break;
+    case 'thousand-bloom':
+      kick(time, master, .16);
+      noise(time, .18, .09, 2600, master, .3);
+      [1, 2.67, 4.12].forEach((ratio, index) => note(voice.root * ratio, time + index * .016, .38, .034 / (index + 1), 'sine', master, index % 2 ? -.4 : .4));
+      break;
+    case 'silence':
+      // Gain automation is authored separately; silence does not create a clip.
+      break;
+    case 'afterlight-heartbeat':
+      for (let beat = scheduled; beat < start + cue.end - .20; beat += .5) {
+        if (beat < now) continue;
+        note(58, beat, .13, .058, 'sine');
+        note(47, beat + .13, .18, .039, 'sine');
+      }
+      break;
+    case 'afterlight-convergence':
+      shepardConvergence(time, span, plan.palette);
+      break;
+    case 'afterlight-reflections': {
+      musicVoice(plan.palette.root * 1.5, time, span, .014, 'sine', master, 0, true);
+      const reduced = animation.reduced || animation.short;
+      cue.times.forEach((at, index) => {
+        if (reduced && index % 3 !== 0) return;
+        const contact = start + at;
+        if (contact < now - .015) return;
+        const pan = Math.sin(index * Math.PI * 2 / 24) * .72;
+        const reflection = { ...voice, root: plan.palette.root * Math.pow(2, [0, 2, 3, 5, 7, 8, 10, 12][index % 8] / 12) };
+        weaponContact(animation, reflection, Math.max(now, contact), .32, pan, index % 3);
+      });
+      break;
+    }
+    case 'afterlight-bloom':
+      // The delayed consequence lands in near silence, not another explosion.
+      note(plan.palette.root / 2, time, .18, .008, 'sine');
+      note(plan.palette.root * 3, time + .03, .22, .0045, 'sine', master, -.3);
+      break;
+    case 'afterlight-chord':
+      plan.palette.chord.forEach((interval, index) => {
+        musicVoice(plan.palette.root * Math.pow(2, interval / 12), time + index * .018,
+          Math.max(.05, span - index * .018), .027 / (1 + index * .15), 'sine', master,
+          (index - 1.5) * .2, true);
+        musicVoice(plan.palette.root * 2 * Math.pow(2, interval / 12), time + index * .018,
+          Math.max(.05, span - index * .018), .009 / (index + 1), 'triangle', master,
+          (1.5 - index) * .2, true);
+      });
+      break;
+    default:
+      // Future authored kit cues retain their fighter/hand timbre without
+      // borrowing Echo's bespoke reflection or finale structure.
+      if (cue.id.includes('hit') || cue.id.includes('cut')) weaponContact(animation, voice, time, .60, palette.pan);
+      else noise(time, .08, .025, palette.brightness, master, palette.pan, 'bandpass');
   }
 }
 
@@ -681,9 +1190,35 @@ function finalArc(animation, palette, start, impact) {
 // Contacts are authored by the choreography module: every preliminary hit is
 // sounded at its actual pose/contact time, including changes in direction.
 export function playChoreography(animation, enabled) {
-  if (!enabled) return;
+  cancelSequenceAudio();
+  if (!enabled || !audioEnabled || volume === 0) return;
+  const previousSequence = schedulingSequence;
   try {
+    if (animation.momentId) animation = sceneMomentAudioPresentation(animation.momentId, animation);
     audioContext();
+    const elapsed = Number.isFinite(animation.startedAt) ? Math.max(0, performance.now() - animation.startedAt) / 1000 : 0;
+    const plan = sequenceAudioPlan(animation), bus = context.createGain();
+    const active = {
+      id: animation.id || `${animation.sequenceId || 'attack'}:${++sequenceSerial}`,
+      animation, plan, bus, sources: new Set(), endTimer: null,
+    };
+    sequenceAudio = active; schedulingSequence = active;
+    bus.gain.value = plan.gain; bus.connect(master);
+    const origin = context.currentTime - elapsed;
+    cinematicMusic(animation, plan, origin, active.id);
+    if (plan.silence) {
+      const now = context.currentTime, at = Math.max(now, origin + plan.silence.at), end = Math.max(at, origin + plan.silence.end);
+      bus.gain.setValueAtTime(plan.gain, now);
+      bus.gain.linearRampToValueAtTime(plan.gain, Math.max(now, at - .015));
+      bus.gain.linearRampToValueAtTime(.0001, at);
+      bus.gain.setValueAtTime(.0001, Math.max(at, end - .001));
+      bus.gain.setValueAtTime(plan.gain, end);
+    }
+    active.endTimer = setTimeout(() => cancelSequenceAudio(active.id), Math.max(0, plan.duration - elapsed) * 1000 + 30);
+    if (plan.authored) {
+      plan.cues.forEach(cue => authoredCue(cue, animation, plan, origin));
+      return;
+    }
     const start = context.currentTime, length = animation.duration / 1000;
     const impact = start + length * animation.impactAt;
     const palette = choreographySoundProfile(animation);
@@ -695,7 +1230,7 @@ export function playChoreography(animation, enabled) {
         const fraction = Array.isArray(contact) ? contact[0] : contact.at;
         if (!Number.isFinite(fraction) || fraction <= 0 || fraction >= animation.impactAt) return;
         const time = start + length * fraction;
-        if (time > impact - .23) return;
+        if (time > impact - (animation.finisher ? .5 : .23)) return;
         const pan = Math.max(-.75, Math.min(.75, Math.sin((index + .5) * 2.4) * .72));
         noise(Math.max(start, time - .075), .065, .032, palette.brightness, master, -pan);
         weaponContact(animation, palette, time, .62 * palette.weight, pan, index);
@@ -706,7 +1241,24 @@ export function playChoreography(animation, enabled) {
     else weaponContact(animation, palette, impact, palette.weight, palette.pan);
   } catch {
     // Combat remains playable when Web Audio is unavailable.
+    cancelSequenceAudio();
+  } finally {
+    schedulingSequence = previousSequence;
   }
+}
+
+/** Entrances, transformations and armour breaks use the same skip-safe bus. */
+export function playSceneMomentAudio(momentId, { sound = true, ...options } = {}) {
+  const animation = sceneMomentAudioPresentation(momentId, options);
+  playChoreography(animation, sound);
+  return animation;
+}
+
+/** Shared reveals, clashes, items and defeat are ancillary, not attack IDs. */
+export function playCombatMomentAudio(momentId, { sound = true, ...options } = {}) {
+  const animation = combatMomentAudioPresentation(momentId, options);
+  playChoreography(animation, sound);
+  return animation;
 }
 
 export function playStinger(rival,enabled){

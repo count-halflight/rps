@@ -1,6 +1,9 @@
 import * as THREE from "three";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { createAlternateCinematicSets, ALTERNATE_SPECTACLE_KINDS } from "./alternateCinematicSets.js";
+import { createFinaleWorld } from "./finaleWorld.js";
+import { createSequenceEffects } from "./sequenceEffects.js";
+import { createSceneMomentEffects } from "./sceneMomentEffects.js";
 
 // These are practical sets, not a screen-wide colour filter. Every finale has
 // something with depth that the camera and the two actors can move around.
@@ -115,6 +118,9 @@ function atmosphereMaterial(color, opacity = .34) {
 }
 
 export function createCinematicWorld(scene) {
+  const finaleWorld = createFinaleWorld(scene);
+  const sequenceEffects = createSequenceEffects(scene);
+  const sceneMomentEffects = createSceneMomentEffects(scene);
   const root = new THREE.Group();
   root.name = "Cinematic sets";
   root.visible = false;
@@ -383,10 +389,16 @@ export function createCinematicWorld(scene) {
   const alternateSets = createAlternateCinematicSets(root, { mesh, basic, metal, ownGeometry, ownMaterial, planetMaterial, noise });
 
   let lastAnimation = null;
-  const reset = () => { root.visible = false; sets.forEach(g => { g.visible = false; }); alternateSets.reset(); if (echoPool.length) clearEchoes(); };
+  const reset = () => { root.visible = false; sets.forEach(g => { g.visible = false; }); alternateSets.reset(); finaleWorld.reset(); sequenceEffects.reset(); sceneMomentEffects.reset(); if (echoPool.length) clearEchoes(); };
   reset();
 
-  function update({ frame, animation, time = 0, low = false, reduced = false, attacker, defender } = {}) {
+  function update({ frame, moment, combat, player, enemy, animation, time = 0, actorHeight, targetHeight, actorEyeHeight, targetEyeHeight, quality, low = false, reduced = false, reduceFlashes = false, attacker, defender, environment } = {}) {
+    const momentEffects = sceneMomentEffects.update({ frame: combat ?? moment, actor: attacker, player, enemy, quality, low, reduced });
+    if (momentEffects.active) { root.visible = false; sets.forEach(g => { g.visible = false; }); alternateSets.reset(); finaleWorld.reset(); sequenceEffects.reset(); if (echoPool.length) clearEchoes(); return momentEffects; }
+    const finale = finaleWorld.update({ frame, animation, time, actorHeight, targetHeight, actorEyeHeight, targetEyeHeight, quality, low, reduced, reduceFlashes, attacker, defender, environment });
+    if (finale.active) { root.visible = false; sets.forEach(g => { g.visible = false; }); alternateSets.reset(); sequenceEffects.reset(); if (echoPool.length) clearEchoes(); return finale; }
+    const namedEffects = sequenceEffects.update({ frame, animation, time, actorHeight, targetHeight, actorEyeHeight, targetEyeHeight, quality, low, reduced, reduceFlashes, attacker, defender, environment });
+    if (namedEffects.active) { root.visible = false; sets.forEach(g => { g.visible = false; }); alternateSets.reset(); if (echoPool.length) clearEchoes(); return namedEffects; }
     const s = frame?.spectacle;
     if (!s || !animation?.finisher || frame.progress >= 1 || !frame.revealed || animation.outcome === "draw") { reset(); return { hideEnvironment: false }; }
     const p = clamp(s.phase ?? frame.progress), sign = s.direction === -1 ? -1 : 1;
@@ -557,6 +569,9 @@ export function createCinematicWorld(scene) {
   return {
     root, update, reset,
     dispose() {
+      finaleWorld.dispose();
+      sequenceEffects.dispose();
+      sceneMomentEffects.dispose();
       clearEchoes();
       root.traverse(o => { if (o.isInstancedMesh) o.dispose(); });
       scene.remove(root); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose());

@@ -13,21 +13,19 @@ import {
   WEAPONS,
   STANCES,
   weaponFor,
-  scanSignal,
   damageFor,
   itemAvailable,
   abilityDetail,
 } from "../game/engine";
 import { perkTotals } from "../game/perks.js";
 import { signatureWarning } from "../game/rivals.js";
+import { rivalProfile } from "../game/rivalProfile.js";
 import { fighterFor, ITEM_TYPES, MOVE_STANCES } from "../game/fighters";
-import { playTone } from "../game/audio";
 import WeaponIcon from "./WeaponIcon";
 import WeaponMark from "./WeaponMark";
 import CalculusLab from "./CalculusLab";
 export default function CombatConsole({
   run,
-  setRun,
   weapon,
   setWeapon,
   stance,
@@ -36,9 +34,9 @@ export default function CombatConsole({
   chooseAction,
   busy,
   modal,
-  sound,
   engage,
   onGuide,
+  onScan,
 }) {
   const bar = useRef(null);
   useEffect(() => {
@@ -67,13 +65,15 @@ export default function CombatConsole({
   const earned = pending?.stage === "action",
     fighter = fighterFor(run.character),
     hand = pending?.playerWeapon || weapon;
+  const rival = rivalProfile(run.seed, run.level, run.enemy, run.character);
   return (
     <section
       ref={bar}
       className={`combat-console ${earned ? "action-ready" : ""} ${open ? "tactics-open" : ""}`}
       aria-label="Combat controls"
+      style={{ '--fighter-color': fighter.color }}
     >
-      {signatureWarning(run)&&<div className="signature-warning" role="status">{run.enemy.rival.name} is readying {run.enemy.rival.signature}. Win the hand to stop it.</div>}
+      {signatureWarning(run)&&<div className="signature-warning" role="status">{rival.name} is readying {rival.signature || run.enemy.rival.signature}. Win the hand to stop it.</div>}
       <div className="combat-read">
         <span>
           {earned
@@ -88,7 +88,7 @@ export default function CombatConsole({
                     ? "Draw. Choose again."
                     : "Tap rock, paper or scissors"}
         </span>
-        <div className="enemy-tell">
+        <div className="enemy-tell" style={{'--tell-confidence': `${Math.min(100,run.enemy.confidence+(perks.tellBoost||0))}%`}}>
           <span title={run.enemy.rival.personalityInfo.detail}>{run.enemy.rival.personalityInfo.name}</span>
           <WeaponIcon type={intent.id} size={20} />
           <b>{intent.type}</b>
@@ -133,16 +133,16 @@ export default function CombatConsole({
                 return (
                   <button
                     key={name}
-                    className={`attack-card attack-${index}`}
+                    className={`attack-card attack-${index} ${run.heat >= 75 && index === 2 ? 'too-hot' : ''}`}
                     disabled={disabled || locked}
                     onClick={() => chooseAction(index)}
                   >
                     <small className="attack-kind">
                       {index === 0
-                        ? "Quick attack"
+                        ? "Strike"
                         : index === 1
-                          ? "Safe attack"
-                          : "Heavy attack"}
+                          ? "Guard"
+                          : "Overdrive"}
                     </small>
                     <WeaponMark style={fighter.style} size={27} />
                     <b>{name}</b>
@@ -184,7 +184,7 @@ export default function CombatConsole({
                 <button
                   key={w.id}
                   className={`weapon-card ${weapon === w.id ? "selected" : ""}`}
-                  style={{ "--weapon-color": fighter.color }}
+                  style={{ "--weapon-color": w.color, "--fighter-color": fighter.color }}
                   aria-pressed={weapon === w.id}
                   disabled={disabled || !!pending}
                   onClick={() => {
@@ -208,11 +208,13 @@ export default function CombatConsole({
       )}
       <div className="combat-foot">
         <div className="resource-strip">
-          <span className="charge-text">
+          <span className="charge-text" style={{'--charge-fill': `${Math.min(100,run.charge)}%`}}>
             Charge <b>{run.charge}</b>
+            <i className="charge-cells" aria-hidden="true" />
           </span>
-          <span className={run.heat >= 75 ? "hot" : ""}>
+          <span className={`heat-text ${run.heat >= 75 ? "hot" : ""}`} style={{'--heat-fill': `${Math.min(100,run.heat)}%`}}>
             Heat <b>{run.heat}</b>
+            <i className="heat-meter" aria-hidden="true"><em /></i>
           </span>
           <span>{run.credits} cr</span>
         </div>
@@ -251,10 +253,7 @@ export default function CombatConsole({
               disabled={
                 disabled || !!pending || run.charge < scanCost || run.scanned || run.scanUsed
               }
-              onClick={() => {
-                setRun((r) => scanSignal(r));
-                playTone("select", sound);
-              }}
+              onClick={onScan}
             >
               <Crosshair size={16} />
               {run.scanUsed ? "Scan used" : "Read hand"}

@@ -7,3 +7,5 @@ dist/
 !.env.example
 artifacts/
 *.blend1
+__pycache__/
+*.pyc

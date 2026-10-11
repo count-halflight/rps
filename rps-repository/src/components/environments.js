@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { assetUrl } from '../game/assets.js';
+import { createBlackTide } from './environments/blackTide.js';
+import { environmentLightState, normalizeEnvironmentCinematic } from './environmentLighting.js';
 
 // Architecture is deliberately separated into silhouettes, a middle distance,
 // and the fighting lane. No district is a wall of the same repeated window.
@@ -10,7 +12,7 @@ const THEMES = [
   { name:'vault', sky:'#07091d', horizon:'#292b57', accent:'#b29dff', warm:'#59dadd', fog:'#151c34' },
   { name:'market', sky:'#180e28', horizon:'#66434c', accent:'#ffbf75', warm:'#fa7369', fog:'#2d2036' },
   { name:'garden', sky:'#071a27', horizon:'#1f5960', accent:'#83e6bc', warm:'#d3e99d', fog:'#173238' },
-  { name:'docks', sky:'#111a34', horizon:'#ae7064', accent:'#85d1ee', warm:'#ffb991', fog:'#283442' },
+  { name:'docks', sky:'#030b12', horizon:'#172c39', accent:'#76c8ff', warm:'#bcd9e3', fog:'#11232e' },
 ];
 export function environmentVariantFor(level, seed=0) {
   const index=(Math.max(1,level)-1)%6, cycle=Math.floor((Math.max(1,level)-1)/6);
@@ -61,7 +63,7 @@ export function createEnvironment(scene) {
     }
     const texture=backdropLoader.load(assetUrl(backdropFiles[index]),()=>{
       backdropState.settled++;backdropState.statuses[index]='loaded';
-      backdropMeshes[index].visible=true;
+      backdropMeshes[index].visible=index!==5;
     },undefined,()=>{
       // A missing image keeps the procedural stage playable. Waiting for one
       // failed asset can never keep the hand controls disabled indefinitely.
@@ -74,6 +76,7 @@ export function createEnvironment(scene) {
     const backdrop=new THREE.Mesh(geometry,backdropMaterial);backdrop.position.set(0,9,0);
     backdrop.visible=false;backdrop.frustumCulled=false;
     backdrop.name=`${THEMES[index].name}-distant-architecture`;stage.add(backdrop);backdropMeshes.push(backdrop);
+    if(index===5){backdrop.scale.setScalar(1.8);backdropMaterial.color.setScalar(.28);backdrop.name='Distant faint harbour atmosphere';}
   });
   const box=new THREE.BoxGeometry(1,1,1),rounded=new RoundedBoxGeometry(1,1,1,3,.075);
   const cylinder=new THREE.CylinderGeometry(1,1,1,24),sphere=new THREE.SphereGeometry(1,24,16);
@@ -381,50 +384,7 @@ export function createEnvironment(scene) {
   for(const side of [-1,1])mesh(rounded,botanicalMetal,[side*2.5,2.3,-10.1],[.15,4.6,.3],stages[4]);
   mesh(rounded,botanicalMetal,[0,4.65,-10.1],[5.3,.17,.3],stages[4]);
   sign('SEED BANK','#b1d9ac',[0,6.1,-13.4],[3.5,.55],stages[4]);
-  // Black tide: a tidal port with articulated cranes, rolling hulls and a
-  // moving sun path on layered water. The fight takes place on a real pier.
-  const waterMat=new THREE.ShaderMaterial({uniforms:{time:{value:0},sun:{value:new THREE.Color('#c08673')},low:{value:0}},side:THREE.DoubleSide,
-    vertexShader:'varying vec2 vUv;varying vec3 pos;uniform float time;void main(){vUv=uv;vec3 p=position;p.z+=sin(p.x*.8+time)*.09+cos(p.y*1.6-time*.8)*.05;pos=p;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}',
-    fragmentShader:`varying vec2 vUv;varying vec3 pos;uniform float time;uniform vec3 sun;${NOISE}
-    void main(){float n=fbm(pos.xy*1.6+time*.09);float stripe=pow(max(0.,sin(pos.y*12.+n*8.+time*1.4)),14.);float reflection=exp(-abs(pos.x)*.17)*(.25+stripe*.75);vec3 water=mix(vec3(.027,.09,.13),sun,reflection*.45);water+=stripe*.052;gl_FragColor=vec4(water,1.);}`});flows.push(waterMat);
-  const water=mesh(new THREE.PlaneGeometry(80,60,64,40),waterMat,[0,-.12,-18],[1,1,1],stages[5]);water.rotation.x=-Math.PI/2;
-  for(const side of [-1,1]){
-    for(let k=0;k<5;k++)mesh(new THREE.CylinderGeometry(.13,.17,1.6,14),concrete,[side*4.8,.15,-k*2+1],[1,1,1],stages[5]);
-    tube([[side*4.8,.8,-7],[side*4.8,.8,2]],.027,brushed,stages[5]);
-    for(let i=0;i<3;i++){
-      const bollard=mesh(cylinder,metal,[side*4.4,.20,1-i*3],[.12,.35,.12],stages[5]);
-      mesh(cylinder,brushed,[side*4.4,.36,1-i*3],[.17,.065,.17],stages[5]);
-    }
-  }
-  function container(x,y,z,color,parent){
-    const group=new THREE.Group();parent.add(group);group.position.set(x,y,z);
-    mesh(rounded,new THREE.MeshStandardMaterial({color,map:weatheredMetal,bumpMap:weatheredMetal,bumpScale:.022,roughness:.69,metalness:.52}),[0,0,0],[2.4,1.5,2.5],group);
-    for(let j=0;j<10;j++)mesh(box,metal,[(j-4.5)*.22,0,1.26],[.028,1.42,.025],group);
-    for(const dx of [-1.2,1.2])mesh(rounded,brushed,[dx,0,1.26],[.07,1.45,.055],group);return group;
-  }
-  for(const side of [-1,1]){
-    container(side*7,.75,-6.4,side<0?'#6c4b43':'#315964',stages[5]);container(side*7,2.28,-6.4,side<0?'#39575c':'#79705b',stages[5]);
-    const crane=new THREE.Group();stages[5].add(crane);crane.position.set(side*9.4,0,-11.4);
-    for(const dx of [-.85,.85])mesh(rounded,metal,[dx,3.2,0],[.33,6.4,.45],crane);
-    for(let k=0;k<4;k++){
-      const strut=mesh(rounded,brushed,[0,1.3+k*1.2,.0],[2.15,.08,.1],crane);strut.rotation.z=(k%2?1:-1)*.62;
-    }
-    mesh(rounded,metal,[0,6.3,0],[2.2,.5,.8],crane);
-    const boom=new THREE.Group();crane.add(boom);boom.position.y=6.5;
-    mesh(rounded,metal,[-side*2.3,0,0],[6.4,.2,.34],boom);
-    tube([[side*.5,.1,0],[-side*4.8,.1,0],[-side*.1,1.2,0],[side*.5,.1,0]],.05,brushed,boom);
-    cable([[-side*4.6,0,.2],[-side*4.6,-2.1,.2]],boom);cable([[-side*4.6,0,-.2],[-side*4.6,-2.1,-.2]],boom);
-    container(-side*4.6,-2.7,0,side<0?'#7d644d':'#45626e',boom).scale.set(.65,.65,.65);
-    animations.push({o:boom,type:'crane',stage:5,phase:side});
-  }
-  const ship=new THREE.Group();stages[5].add(ship);ship.position.set(-5,.1,-23);
-  mesh(rounded,dark,[0,.8,0],[11,1.6,3.3],ship);
-  mesh(rounded,metal,[2,2.35,0],[3.1,1.6,2.8],ship);
-  for(let i=0;i<7;i++)mesh(rounded,glow('#d3c2a0',.8),[.7+i*.38,2.58,1.42],[.20,.35,.03],ship);
-  for(let i=0;i<3;i++)container(-3+i*2.5,2.1,0,['#4a6365','#795948','#606f70'][i],ship).scale.set(.85,.85,.85);
-  tube([[2.4,3.15,0],[2.4,6.2,0],[3.4,6.2,0]],.07,metal,ship);
-  mesh(sphere,glow('#dd8572',.7),[2.4,6.25,0],[.08,.08,.08],ship);animations.push({o:ship,type:'ship',stage:5});
-  const beacon=lightBeam([8,5.6,-15],'#aed5e6',stages[5],2.7,17,[0,0,Math.PI/2]);animations.push({o:beacon,type:'beacon',stage:5});
+  const blackTide=createBlackTide(stages[5]);
   // Three alternate prop arrangements per district retain a familiar district
   // identity while changing its stage silhouette as the endless floors climb.
   const layouts=stages.map((stage,index)=>Array.from({length:3},(_,layout)=>{
@@ -455,8 +415,6 @@ export function createEnvironment(scene) {
           const stalk=tube([[x-side*j*.3,0,z-j*.4],[x-side*j*.3+.1,1.3,z-j*.4],[x-side*j*.3-.15,2.5+j*.13,z-j*.4]],.025,botanicalMetal,group);
           mesh(sphere,glow('#a9d9ae',.6),[x-side*j*.3-.15,2.5+j*.13,z-j*.4],[.065,.065,.065],group);
         }
-      }else{
-        for(let j=0;j<2+layout;j++)container(x-side*(j%2)*2.4,.75+Math.floor(j/2)*1.53,z,['#506368','#745448','#416066'][j%3],group).scale.set(.8,.8,.8);
       }
     }
     return group;
@@ -467,12 +425,12 @@ export function createEnvironment(scene) {
     const object=mesh(new THREE.PlaneGeometry(8,2.0),mist,[-9+i*6,.65,-6-i%2],[1,1,1]);animations.push({o:object,type:'mist',phase:i});optional.push(object);
   }
   const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,
-    uniforms:{time:{value:0},top:{value:new THREE.Color(THEMES[0].sky)},horizon:{value:new THREE.Color(THEMES[0].horizon)},stars:{value:1}},
+    uniforms:{time:{value:0},top:{value:new THREE.Color(THEMES[0].sky)},horizon:{value:new THREE.Color(THEMES[0].horizon)},stars:{value:1},life:{value:1}},
     vertexShader:'varying vec3 vWorld;void main(){vWorld=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader:`varying vec3 vWorld;uniform float time,stars;uniform vec3 top,horizon;${NOISE}
+    fragmentShader:`varying vec3 vWorld;uniform float time,stars,life;uniform vec3 top,horizon;${NOISE}
       void main(){vec3 d=normalize(vWorld);float h=max(0.,d.y);vec2 p=d.xz/max(.22,d.y+.35);float cloud=fbm(p*2.7+vec2(time*.011,time*.003));vec3 c=mix(horizon,top,smoothstep(0.,.67,h));
       c+=pow(cloud,4.)*.062;float sparkle=step(.996,hash(floor(p*145.)))*smoothstep(.12,.6,h);c+=sparkle*stars*.35;
-      float moon=1.-smoothstep(.035,.04,length(d-vec3(-.40,.51,-.76)));c+=moon*vec3(.22,.31,.35)*stars;gl_FragColor=vec4(c,1.);}`});
+      float moon=1.-smoothstep(.035,.04,length(d-vec3(-.40,.51,-.76)));c+=moon*vec3(.22,.31,.35)*stars;gl_FragColor=vec4(c*life,1.);}`});
   const sky=mesh(new THREE.SphereGeometry(78,40,24),skyMat,[0,0,0]);sky.castShadow=sky.receiveShadow=false;
   const rainCount=320,rainPos=new Float32Array(rainCount*6),rainGeo=new THREE.BufferGeometry();rainGeo.setAttribute('position',new THREE.BufferAttribute(rainPos,3));
   const rain=new THREE.LineSegments(rainGeo,new THREE.LineBasicMaterial({color:'#aac5d0',transparent:true,opacity:.21,depthWrite:false}));root.add(rain);
@@ -483,21 +441,51 @@ export function createEnvironment(scene) {
     const light=new THREE.PointLight(side<0?THEMES[0].accent:THEMES[0].warm,17,17,2);light.position.set(side*4.4,3.6,-1.4);scene.add(light);lights.push(light);
   }
   const landmarkLight=new THREE.PointLight(THEMES[0].accent,10,16,2);landmarkLight.position.set(0,3.5,-7);scene.add(landmarkLight);lights.push(landmarkLight);
-  let current=-1,variation=-1,state=environmentVariantFor(1),timeNow=0;
+  const illuminatedMaterials=new Map(),flowStrengths=new Map(flows.filter(m=>m.uniforms.strength).map(m=>[m,m.uniforms.strength.value]));
+  root.traverse(object=>{
+    if(object.isMesh&&!object.isReflector)for(const material of Array.isArray(object.material)?object.material:[object.material]){
+      if(material?.isMeshStandardMaterial&&!illuminatedMaterials.has(material)&&!blackTide.root.getObjectById(object.id))illuminatedMaterials.set(material,material.emissiveIntensity||0);
+    }
+  });
+  let current=-1,variation=-1,state=environmentVariantFor(1),timeNow=0,visible=true;
+  let manualLight={},cinematic=normalizeEnvironmentCinematic(),life=environmentLightState(),defeatAt=null,lastLevel=1;
+  let rainTime=0;
+  const grade=new THREE.Vector3(1,1,1);
   return {root,theme:'rain',event:'passing trains',
+    grade,
     get ready(){return backdropState.settled===6;},
-    get backdropReady(){return backdropState.statuses[Math.max(0,current)]==='loaded';},
-    setVisible(visible){root.visible=visible;lights.forEach(light=>light.visible=visible);},
-    update(time,level,district,frame,reduced=false,low=false,seed=0,bossPhase=0){
+    get backdropReady(){return current!==5&&backdropState.statuses[Math.max(0,current)]==='loaded';},
+    get lightState(){return life;},
+    reflectionPlan(){return state.index===5?blackTide.reflectionPlan():{enabled:false,maxPasses:0,maxHz:0,excluded:[]};},
+    setReflectionBudget(enabled){blackTide.setReflectionBudget(enabled);},
+    updateReflection(renderer,camera){return visible&&state.index===5&&blackTide.updateReflection(renderer,scene,camera);},
+    setVisible(value){visible=Boolean(value);root.visible=visible;lights.forEach(light=>light.visible=visible);blackTide.setVisible(visible&&state.index===5);},
+    setLightState(options={}){manualLight={...options};},
+    setCinematicState(value){cinematic=normalizeEnvironmentCinematic(value);blackTide.setCinematicState(cinematic);},
+    resetCinematicState(){cinematic=normalizeEnvironmentCinematic();blackTide.resetCinematicState();},
+    landmarks(){
+      if(state.index===5)return blackTide.landmarks();
+      const name=['Night railway','Foundry reactor','Prism nucleus','Lantern avenue','Conservatory canopy'][state.index];
+      return [{id:'stage',name:'Fighting lane',kind:'stage',position:[0,0,0]},{id:'district-landmark',name,kind:'architecture',position:[0,4,-9]},
+        {id:'skyline',name:`${THEMES[state.index].name} skyline`,kind:'skyline',position:[0,7,-25]}];
+    },
+    landmark(id){return this.landmarks().find(value=>value.id===id)||null;},
+    update(time,level,district,frame,reduced=false,low=false,seed=0,bossPhase=0,options={}){
       state=environmentVariantFor(level,seed);const {index,cycle}=state,theme=THEMES[index],t=reduced?0:time;timeNow=t;
+      const lighting={...manualLight,...options};
+      if(options.cinematic!==undefined)cinematic=normalizeEnvironmentCinematic(options.cinematic);
+      if(level!==lastLevel||(lighting.rivalHpRatio??1)>0)defeatAt=null;
+      else if(defeatAt===null)defeatAt=time;
+      lastLevel=level;
+      life=environmentLightState({...lighting,cinematic,defeatElapsed:Number.isFinite(lighting.defeatElapsed)?lighting.defeatElapsed:defeatAt===null?undefined:time-defeatAt},time);
+      grade.set(1+life.warm*.07,1-life.warm*.015,1-life.warm*.09);
       if(scene.fog){scene.fog.color.set(theme.fog);scene.fog.density=index===1?.027:index===4?.018:.019;}
       layouts.forEach((groups,i)=>groups.forEach((group,j)=>{
         group.visible=i===index&&j===state.layout;
         group.position.x=((state.dressingKey%101)/100-.5)*.65;group.position.z=((state.dressingKey%137)/136-.5)*1.1;
       }));
-      ground.scale.set(index===5?.31:1,index===5?.33:1,1);
-      reflections.visible=index!==2;reflectionMat.uniforms.time.value=t;reflectionMat.uniforms.strength.value=index===0?.34:index===3?.17:index===5?.12:.065;
-      water.position.y=-.12+bossPhase*.11;
+      ground.visible=index!==5;ground.scale.set(1,1,1);
+      reflections.visible=index!==2&&index!==5;reflectionMat.uniforms.time.value=t;reflectionMat.uniforms.strength.value=index===0?.34:index===3?.17:index===5?.12:.065;
       stages[2].rotation.z=index===2?-(bossPhase*.012):0;
       if(current!==index||variation!==cycle){
         current=index;variation=cycle;stages.forEach((group,i)=>group.visible=i===index);
@@ -508,11 +496,14 @@ export function createEnvironment(scene) {
         lights[0].color.set(theme.accent);lights[1].color.set(theme.warm);landmarkLight.color.set(theme.accent);
         root.userData.theme=theme.name;this.theme=theme.name;
       }
-      skyMat.uniforms.time.value=t;
+      skyMat.uniforms.time.value=t*(1+cinematic.sky*18);
       // Re-apply the stable horizon each frame so a phase pulse never compounds
       // into a different colour when the game is paused or runs at a high FPS.
       skyMat.uniforms.horizon.value.set(theme.horizon);
       if(bossPhase)skyMat.uniforms.horizon.value.lerp(new THREE.Color(theme.accent),bossPhase*.08);
+      skyMat.uniforms.top.value.set(theme.sky).multiplyScalar(life.blackout?0:.22+life.arenaStrength*.78);
+      skyMat.uniforms.horizon.value.multiplyScalar(life.blackout?0:.22+life.arenaStrength*.78);
+      skyMat.uniforms.life.value=life.blackout?0:1;
       flows.forEach(material=>{material.uniforms.time.value=t;if(material.uniforms.low)material.uniforms.low.value=low?1:0;});
       animations.forEach(({o,type,phase=0,stage,baseY})=>{
         if(stage!==undefined&&stage!==index)return;
@@ -528,28 +519,35 @@ export function createEnvironment(scene) {
           if(!low){const a=o.geometry.attributes.position;for(let i=0;i<a.count;i++)a.setZ(i,Math.sin(a.getX(i)*2.6+t*1.7+phase)*.035+Math.cos(a.getY(i)*2+t)*.03);a.needsUpdate=true;o.geometry.computeVertexNormals();}
         }
         else if(type==='tree')o.rotation.z=Math.sin(t*(.7+bossPhase*.25)+phase)*(.025+bossPhase*.011);
-        else if(type==='ship'){o.position.x=-5+Math.sin(t*.085+cycle)*7;o.position.y=.13+Math.sin(t*.9)*.07;o.rotation.z=Math.sin(t*.54)*.018;}
-        else if(type==='crane'){o.rotation.y=Math.sin(t*.15+phase)*.21;o.rotation.z=Math.sin(t*.27+phase)*.020;}
         else if(type==='crowd')o.rotation.z=Math.sin(t*.85+phase)*.028;
-        else if(type==='beacon')o.rotation.y=t*.36;
-        else if(type==='mist'){o.visible=!low||phase<2;o.position.x=-10+((t*.35+phase*5)%25);o.material.uniforms.tint.value.set(theme.horizon);}
+        else if(type==='mist'){o.visible=index!==5&&(!low||phase<2);o.position.x=-10+((t*.35+phase*5)%25);o.material.uniforms.tint.value.set(theme.horizon);}
       });
       optional.forEach(o=>{if(!animations.some(a=>a.o===o&&a.type==='mist'))o.visible=!low;});
       distanceGroups.forEach(({group,near})=>group.visible=near||!low);
       rain.visible=index===0||index===5;rain.material.opacity=.16+(state.weather===1?.10:0);rainGeo.setDrawRange(0,low?190:rainCount*2);
+      if(!lighting.freezeRain)rainTime=t;
       for(let i=0;i<rainCount;i++){
-        const x=((i*7.31)%22)-11,y=9-((t*(4.5+state.weather)+i*.73)%9),z=((i*3.77)%18)-12;
+        const x=((i*7.31)%22)-11,y=9-((rainTime*(4.5+state.weather)+i*.73)%9),z=((i*3.77)%18)-12;
         rainPos.set([x,y,z,x-.055,y+.26,z],i*6);
       }rainGeo.attributes.position.needsUpdate=true;
-      motes.visible=index!==0;motes.material.color.set(index===1?'#e98f54':index===4?'#cff1b1':theme.accent);motes.geometry.setDrawRange(0,low?55:moteCount);
+      motes.visible=index!==0&&index!==5;motes.material.color.set(index===1?'#e98f54':index===4?'#cff1b1':theme.accent);motes.geometry.setDrawRange(0,low?55:moteCount);
       for(let i=0;i<moteCount;i++)motePos.set([Math.sin(i*2.399+t*.075)*8,((i*.127+t*(index===1?.5:.10))%6)+.2,-8+Math.cos(i*4.57+t*.10)*5],i*3);
       moteGeo.attributes.position.needsUpdate=true;
       lights[0].intensity=15+Math.sin(t*.65)*1.0+bossPhase*2;lights[1].intensity=12+Math.sin(t*.83)*1.1;
       landmarkLight.intensity=index===1?24+Math.sin(t*2.2)*3:index===2?14:index===4?8:5;
+      lights[0].intensity*=life.arenaStrength;lights[1].intensity*=life.arenaStrength;landmarkLight.intensity*=life.arenaStrength;
+      illuminatedMaterials.forEach((base,material)=>{material.emissiveIntensity=base*Math.max(life.neon,life.relightWave);});
+      flowStrengths.forEach((base,material)=>{material.uniforms.strength.value=base*life.arenaStrength;});
+      backdropMeshes.forEach((backdrop,i)=>backdrop.material.color.setScalar((i===5?.28:1)*(life.blackout?0:.18+life.arenaStrength*.82)));
+      reflectionMat.uniforms.strength.value*=life.arenaStrength;
+      rain.material.opacity*=life.arenaStrength;motes.material.opacity=life.arenaStrength;
+      blackTide.setVisible(visible&&index===5);
+      if(index===5)blackTide.update(time,state,life,{low,reduced,cinematic,reflections:lighting.reflections,impact:frame?.impact||frame?.impulse||0});
       this.event=['passing trains','working furnaces','orbital mechanism','lantern wind','garden wind','harbour traffic'][index];
     },
     snapshot(){return {theme:this.theme,variant:state.layout,cycle:state.cycle,event:this.event,time:timeNow,
-      backdrop:backdropState.statuses[state.index],asset:backdropFiles[state.index]};},
-    dispose(){textures.forEach(t=>t.dispose());lights.forEach(light=>scene.remove(light));},
+      backdrop:state.index===5?'authored-3d':backdropState.statuses[state.index],asset:state.index===5?null:backdropFiles[state.index],lightStage:life.stage,blackout:life.blackout,
+      ...(state.index===5?{harbour:blackTide.snapshot()}:{})};},
+    dispose(){blackTide.dispose();textures.forEach(t=>t.dispose());lights.forEach(light=>scene.remove(light));},
   };
 }

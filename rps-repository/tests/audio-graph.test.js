@@ -61,7 +61,7 @@ test("battle audio schedules a music cut before the final impact and cleans up i
       (e) => e.value === 0.0001 && ["set", "ramp"].includes(e.method),
     );
     assert.ok(
-      silence.some((e) => Math.abs(e.time - (5.4 * 0.64 - 0.22)) < 1e-9),
+      silence.some((e) => Math.abs(e.time - (5.4 * 0.64 - 0.5)) < 1e-9),
     );
     assert.ok(silence.some((e) => Math.abs(e.time - 5.4 * 0.64) < 1e-9));
     assert.ok(events.some((e) => e.method === "target" && e.value < 300));
